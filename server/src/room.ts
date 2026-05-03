@@ -5,6 +5,17 @@ import type { RoundQuestions } from "@shared/pack-types";
 import { reduce, initialState, type Action } from "./reducer";
 import type { SocketData } from "./socket-data";
 import { packRegistry } from "./pack-registry";
+import { TimerManager } from "./timer-manager";
+import {
+  advanceFromIntroOrReveal,
+  enterFinalWager,
+  handleAnswer,
+  handleBuzz,
+  handleTimerExpired,
+  handleWager,
+  type EngineResult,
+  type TimerEvent,
+} from "./round-engine";
 
 // How long a disconnected player remains in the room before being auto-removed.
 // Allows tab refresh / phone backgrounding to seamlessly reconnect.
@@ -19,6 +30,7 @@ export class Room {
   roundQuestions: RoundQuestions | null = null;
   private sockets = new Map<string, ServerWebSocket<SocketData>>();
   private disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly timers = new TimerManager();
 
   constructor(roomCode: string, hostId: string) {
     this.state = initialState(roomCode, hostId);
@@ -39,8 +51,38 @@ export class Room {
     return null;
   }
 
+  // Player action: BUZZ. Goes through round engine.
+  handleBuzz(playerId: string): void {
+    if (!this.roundQuestions) return;
+    this.applyEngine(handleBuzz(this.state, playerId));
+  }
+
+  // Player action: ANSWER.
+  handleAnswer(playerId: string, choice: 0 | 1 | 2 | 3): void {
+    if (!this.roundQuestions) return;
+    this.applyEngine(handleAnswer(this.state, this.roundQuestions, playerId, choice));
+  }
+
+  // Player action: WAGER.
+  handleWager(playerId: string, amount: number): void {
+    if (!this.roundQuestions) return;
+    this.applyEngine(handleWager(this.state, playerId, amount));
+  }
+
+  // Host action: NEXT_QUESTION (advances ROUND_INTRO/QUESTION_REVEAL/REVEAL/SCOREBOARD/BUZZ_OPEN).
+  // Also auto-promotes round 3 → round 4 (final) when SCOREBOARD advances.
+  handleNextQuestion(playerId: string): void {
+    if (playerId !== this.state.hostId) return;
+    if (!this.roundQuestions) return;
+    // Special case: SCOREBOARD after round 3 → enter FINAL_WAGER directly.
+    if (this.state.phase === "SCOREBOARD" && this.state.currentRound === 3) {
+      this.applyEngine(enterFinalWager(this.state, this.roundQuestions));
+      return;
+    }
+    this.applyEngine(advanceFromIntroOrReveal(this.state, this.roundQuestions));
+  }
+
   attachSocket(playerId: string, ws: ServerWebSocket<SocketData>): void {
-    // Replace any prior socket for this player (older tab takes the loss).
     const prev = this.sockets.get(playerId);
     if (prev && prev !== ws) {
       try {
@@ -68,8 +110,6 @@ export class Room {
   detachSocket(ws: ServerWebSocket<SocketData>): void {
     const playerId = ws.data.playerId;
     if (!playerId) return;
-    // Only react if this is still the active socket for that player
-    // (a reconnect could have replaced it before close fired).
     if (this.sockets.get(playerId) !== ws) return;
 
     this.sockets.delete(playerId);
@@ -132,6 +172,7 @@ export class Room {
   }
 
   destroy(): void {
+    this.timers.clearAll();
     for (const t of this.disconnectTimers.values()) clearTimeout(t);
     this.disconnectTimers.clear();
     for (const ws of this.sockets.values()) {
@@ -142,5 +183,25 @@ export class Room {
       }
     }
     this.sockets.clear();
+  }
+
+  // Applies an engine result: updates state, schedules / clears timers,
+  // broadcasts the new state if it changed.
+  private applyEngine(result: EngineResult): void {
+    const prev = this.state;
+    if (result.clear) {
+      for (const name of result.clear) this.timers.clear(name);
+    }
+    if (result.schedule) {
+      const { name, delayMs, event } = result.schedule;
+      this.timers.schedule(name, delayMs, () => this.fireTimer(event));
+    }
+    this.state = result.state;
+    if (this.state !== prev) this.broadcast();
+  }
+
+  private fireTimer(event: TimerEvent): void {
+    if (!this.roundQuestions) return;
+    this.applyEngine(handleTimerExpired(this.state, this.roundQuestions, event));
   }
 }

@@ -138,12 +138,27 @@ export function handleClientMessage(
         sendError(ws, "ROOM_NOT_FOUND", "your room no longer exists");
         return;
       }
-      const action = { ...msg, playerId: ws.data.playerId } as Action;
-      room.dispatch(action);
-      // LEAVE specifically: drop the socket's room association after dispatch.
-      if (msg.type === "LEAVE") {
-        ws.data.playerId = null;
-        ws.data.roomCode = null;
+      const playerId = ws.data.playerId;
+      switch (msg.type) {
+        case "BUZZ":
+          room.handleBuzz(playerId);
+          break;
+        case "ANSWER":
+          room.handleAnswer(playerId, msg.payload.choice);
+          break;
+        case "WAGER":
+          room.handleWager(playerId, msg.payload.amount);
+          break;
+        case "NEXT_QUESTION":
+          room.handleNextQuestion(playerId);
+          break;
+        case "LEAVE": {
+          const action = { ...msg, playerId } as Action;
+          room.dispatch(action);
+          ws.data.playerId = null;
+          ws.data.roomCode = null;
+          break;
+        }
       }
       return;
     }
