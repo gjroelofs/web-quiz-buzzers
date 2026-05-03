@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import { SettingsProvider } from "./lib/settings-context";
 import { ScanlineOverlay } from "./components/style/scanline-overlay";
+import { SettingsPanel } from "./components/style/settings-panel";
 import "./styles.css";
 
 const root = document.getElementById("root");
@@ -12,6 +13,7 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <SettingsProvider>
       <App />
+      <SettingsPanel />
       <ScanlineOverlay />
     </SettingsProvider>
   </React.StrictMode>,

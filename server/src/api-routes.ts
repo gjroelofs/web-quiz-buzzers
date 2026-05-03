@@ -5,6 +5,11 @@ let cachedLanIps: string[] | null = null;
 
 function detectLanIps(): string[] {
   if (cachedLanIps) return cachedLanIps;
+  const override = process.env.HOST_IP?.trim();
+  if (override) {
+    cachedLanIps = [override];
+    return cachedLanIps;
+  }
   const out: string[] = [];
   const ifaces = networkInterfaces();
   for (const name of Object.keys(ifaces)) {

@@ -1,7 +1,7 @@
 ---
 title: "Buzz Quiz Game — Local LAN Jackbox-style party game"
 description: "Self-hosted Bun+React quiz game with PlayStation Buzz controllers + phones, neon retro aesthetic, mixed round formats."
-status: pending
+status: completed
 priority: P2
 effort: ~40h
 branch: main
@@ -31,16 +31,16 @@ Build a self-hosted, LAN-only Jackbox-style quiz party game. Host runs Bun serve
 | # | Phase | Status | Effort |
 |---|-------|--------|--------|
 | 1 | [Foundation & Tooling](phase-01-foundation-and-tooling.md) | ✓ completed | ~3h |
-| 2 | [WebHID Buzz Controller Layer](phase-02-webhid-buzz-controller-layer.md) | ☐ pending | ~4h |
-| 3 | [Game State Server & Rooms](phase-03-game-state-server-and-rooms.md) | ☐ pending | ~4h |
-| 4 | [Question Pack System](phase-04-question-pack-system.md) | ☐ pending | ~3h |
-| 5 | [Phone Client & Join Flow](phase-05-phone-client-and-join-flow.md) | ☐ pending | ~3h |
-| 6 | [Setup & Lobby Screens](phase-06-setup-and-lobby-screens.md) | ☐ pending | ~3h |
-| 7 | [Round Mechanics](phase-07-round-mechanics.md) | ☐ pending | ~5h |
-| 8 | [Game Screens & Flow](phase-08-game-screens-and-flow.md) | ☐ pending | ~5h |
-| 9 | [Visual Style System](phase-09-visual-style-system.md) | ☐ pending | ~3h |
-| 10 | [Audio System](phase-10-audio-system.md) | ☐ pending | ~3h |
-| 11 | [Polish & Testing](phase-11-polish-and-testing.md) | ☐ pending | ~4h |
+| 2 | [WebHID Buzz Controller Layer](phase-02-webhid-buzz-controller-layer.md) | ✓ completed | ~4h |
+| 3 | [Game State Server & Rooms](phase-03-game-state-server-and-rooms.md) | ✓ completed | ~4h |
+| 4 | [Question Pack System](phase-04-question-pack-system.md) | ✓ completed | ~3h |
+| 5 | [Phone Client & Join Flow](phase-05-phone-client-and-join-flow.md) | ✓ completed | ~3h |
+| 6 | [Setup & Lobby Screens](phase-06-setup-and-lobby-screens.md) | ✓ completed | ~3h |
+| 7 | [Round Mechanics](phase-07-round-mechanics.md) | ✓ completed | ~5h |
+| 8 | [Game Screens & Flow](phase-08-game-screens-and-flow.md) | ✓ completed | ~5h |
+| 9 | [Visual Style System](phase-09-visual-style-system.md) | ✓ completed | ~3h |
+| 10 | [Audio System](phase-10-audio-system.md) | ✓ completed | ~3h |
+| 11 | [Polish & Testing](phase-11-polish-and-testing.md) | ✓ completed | ~4h |
 
 ## Key Dependencies
 

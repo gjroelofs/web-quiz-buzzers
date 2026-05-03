@@ -78,6 +78,9 @@ function logBootInfo(port: number) {
 }
 
 function getLanIps(): string[] {
+  // Allow operator override (avoids picking Docker bridge / VPN IPs by accident).
+  const override = process.env.HOST_IP?.trim();
+  if (override) return [override];
   const out: string[] = [];
   const ifaces = networkInterfaces();
   for (const name of Object.keys(ifaces)) {
