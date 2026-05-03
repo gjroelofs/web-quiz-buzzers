@@ -1,10 +1,14 @@
-import type { WSMessage } from "@shared/messages";
+import type { ClientMessage, ServerMessage } from "@shared/messages";
 
-type MessageHandler = (msg: WSMessage) => void;
+type MessageHandler = (msg: ServerMessage) => void;
 type StatusHandler = (status: "connected" | "disconnected") => void;
 
 // Auto-reconnecting typed WebSocket wrapper. Connects to ws(s)://<host>/ws by default.
 // Backoff doubles on each failure up to 30s; resets on successful open.
+//
+// The transport itself doesn't validate message shapes — game-level routing
+// + Zod-equivalent guards live in the upper layers (server-side router,
+// client-side game-session).
 export class WSClient {
   private ws: WebSocket | null = null;
   private messageHandlers = new Set<MessageHandler>();
@@ -20,7 +24,7 @@ export class WSClient {
       `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
   }
 
-  connect() {
+  connect(): void {
     this.closedByUser = false;
     this.clearReconnectTimer();
     const ws = new WebSocket(this.url);
@@ -31,12 +35,14 @@ export class WSClient {
       for (const h of this.statusHandlers) h("connected");
     });
     ws.addEventListener("message", (e) => {
+      let msg: ServerMessage;
       try {
-        const msg = JSON.parse(String(e.data)) as WSMessage;
-        for (const h of this.messageHandlers) h(msg);
+        msg = JSON.parse(String(e.data)) as ServerMessage;
       } catch {
         console.warn("[ws] invalid JSON from server");
+        return;
       }
+      for (const h of this.messageHandlers) h(msg);
     });
     ws.addEventListener("close", () => {
       for (const h of this.statusHandlers) h("disconnected");
@@ -51,7 +57,7 @@ export class WSClient {
     });
   }
 
-  send(msg: WSMessage) {
+  send(msg: ClientMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
     }
@@ -71,13 +77,13 @@ export class WSClient {
     };
   }
 
-  close() {
+  close(): void {
     this.closedByUser = true;
     this.clearReconnectTimer();
     this.ws?.close();
   }
 
-  private clearReconnectTimer() {
+  private clearReconnectTimer(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

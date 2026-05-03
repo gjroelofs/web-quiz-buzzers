@@ -1,9 +1,13 @@
 import { networkInterfaces } from "node:os";
 import { websocketHandler } from "./websocket-handler";
+import { rooms } from "./rooms";
+import { emptySocketData } from "./socket-data";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const IS_PROD = process.env.NODE_ENV === "production";
 const DIST_DIR = "client/dist";
+
+rooms.startGcLoop();
 
 const server = Bun.serve({
   port: PORT,
@@ -11,8 +15,8 @@ const server = Bun.serve({
   fetch(req, server) {
     const url = new URL(req.url);
     if (url.pathname === "/ws") {
-      // `data` is required by @types/bun's upgrade() signature even though it's logically optional.
-      if (server.upgrade(req, { data: undefined })) return;
+      // Initialize per-socket data; the message router populates playerId/roomCode on join.
+      if (server.upgrade(req, { data: emptySocketData() })) return;
       return new Response("WebSocket upgrade failed", { status: 400 });
     }
     return handleHttp(url);
