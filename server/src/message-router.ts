@@ -103,8 +103,28 @@ export function handleClientMessage(
       return;
     }
 
+    case "START_GAME": {
+      if (!ws.data.playerId || !ws.data.roomCode) {
+        sendError(ws, "NOT_IN_ROOM", "join a room first");
+        return;
+      }
+      const room = rooms.get(ws.data.roomCode);
+      if (!room) {
+        sendError(ws, "ROOM_NOT_FOUND", "your room no longer exists");
+        return;
+      }
+      const err = room.startGame(msg.payload.packId, ws.data.playerId);
+      if (err === "PACK_NOT_FOUND") {
+        sendError(ws, "PACK_NOT_FOUND", `pack '${msg.payload.packId}' not loaded`);
+      } else if (err === "NOT_HOST") {
+        sendError(ws, "NOT_HOST", "only the host can start the game");
+      } else if (err === "BAD_PHASE") {
+        sendError(ws, "BAD_PHASE", "game already started");
+      }
+      return;
+    }
+
     case "LEAVE":
-    case "START_GAME":
     case "BUZZ":
     case "ANSWER":
     case "WAGER":

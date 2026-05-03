@@ -1,0 +1,26 @@
+{
+  "name": "90s Neon",
+  "description": "All things 1990s — grunge, dial-up, frosted tips, and Tamagotchi panic.",
+  "questions": [
+    { "text": "What grunge band was fronted by Kurt Cobain?", "answers": ["Pearl Jam", "Nirvana", "Soundgarden", "Alice in Chains"], "correct": 1, "category": "Music", "difficulty": 1, "media": null },
+    { "text": "Which 1995 OS featured the iconic 'Start' button?", "answers": ["Windows 3.1", "Windows 95", "Windows ME", "Windows XP"], "correct": 1, "category": "Tech", "difficulty": 1, "media": null },
+    { "text": "Which handheld digital pet launched in 1996?", "answers": ["Furby", "Tamagotchi", "Giga Pet", "Aibo"], "correct": 1, "category": "Tech", "difficulty": 1, "media": null },
+    { "text": "Which sitcom featured six friends in NYC over a 10-year run starting 1994?", "answers": ["Seinfeld", "Cheers", "Friends", "Frasier"], "correct": 2, "category": "TV", "difficulty": 1, "media": null },
+    { "text": "Which group sang 'Wannabe' in 1996?", "answers": ["TLC", "Spice Girls", "Destiny's Child", "All Saints"], "correct": 1, "category": "Music", "difficulty": 1, "media": null },
+    { "text": "What was Sega's blue mascot?", "answers": ["Sonic", "Tails", "Knuckles", "Shadow"], "correct": 0, "category": "Games", "difficulty": 1, "media": null },
+    { "text": "What hair accessory was synonymous with the 90s?", "answers": ["Barrette", "Scrunchie", "Headband", "Bandana"], "correct": 1, "category": "Fashion", "difficulty": 1, "media": null },
+    { "text": "Which boy band sang 'I Want It That Way'?", "answers": ["NSYNC", "Backstreet Boys", "98 Degrees", "Take That"], "correct": 1, "category": "Music", "difficulty": 1, "media": null },
+    { "text": "Which paranormal show featured Mulder and Scully?", "answers": ["Twin Peaks", "Lost", "The X-Files", "Supernatural"], "correct": 2, "category": "TV", "difficulty": 1, "media": null },
+    { "text": "What 1999 'Y2K' bug worried about computer dates rolling over to…?", "answers": ["1900", "2000", "1800", "Zero"], "correct": 0, "category": "Tech", "difficulty": 2, "media": null },
+    { "text": "Which two rappers had the East/West Coast feud?", "answers": ["Jay-Z & Nas", "Tupac & Biggie", "Eminem & Dr. Dre", "Ice Cube & Easy-E"], "correct": 1, "category": "Music", "difficulty": 2, "media": null },
+    { "text": "Which baggy jean brand peaked in the late 90s skater scene?", "answers": ["Levi's", "JNCO", "Wrangler", "Lee"], "correct": 1, "category": "Fashion", "difficulty": 2, "media": null },
+    { "text": "Which 1997 film featured a sinking ocean liner?", "answers": ["The Poseidon Adventure", "Pearl Harbor", "Titanic", "The Perfect Storm"], "correct": 2, "category": "Film", "difficulty": 1, "media": null },
+    { "text": "What sound did 90s internet make when connecting?", "answers": ["A beep", "A dial-up modem screech", "Silence", "A click"], "correct": 1, "category": "Tech", "difficulty": 1, "media": { "type": "audio", "src": "dialup-placeholder.mp3" } },
+    { "text": "Which arcade fighter featured 'Finish Him!'?", "answers": ["Street Fighter II", "Mortal Kombat", "Tekken", "Killer Instinct"], "correct": 1, "category": "Games", "difficulty": 1, "media": { "type": "image", "src": "mk-flyer-placeholder.png" } },
+    { "text": "Which colorful elastic toy clamped around your wrist?", "answers": ["Slap bracelet", "Charm bracelet", "Beaded cuff", "Silly band"], "correct": 0, "category": "Fashion", "difficulty": 2, "media": { "type": "image", "src": "slap-bracelet-placeholder.png" } },
+    { "text": "Which Britpop band released 'Wonderwall'?", "answers": ["Blur", "Pulp", "Oasis", "Suede"], "correct": 2, "category": "Music", "difficulty": 1, "media": null },
+    { "text": "What PC game popularized real-time strategy in the 90s?", "answers": ["Doom", "Warcraft II", "Quake", "Diablo"], "correct": 1, "category": "Games", "difficulty": 2, "media": null },
+    { "text": "Which animated MTV duo loved nachos and headbanging?", "answers": ["Beavis and Butt-Head", "Ren and Stimpy", "Daria and Jane", "Jay and Silent Bob"], "correct": 0, "category": "TV", "difficulty": 2, "media": null },
+    { "text": "Which 90s gadget was a portable music device using cassettes?", "answers": ["Walkman", "iPod", "Discman", "Zune"], "correct": 0, "category": "Tech", "difficulty": 1, "media": null }
+  ]
+}

@@ -2,10 +2,24 @@ import { networkInterfaces } from "node:os";
 import { websocketHandler } from "./websocket-handler";
 import { rooms } from "./rooms";
 import { emptySocketData } from "./socket-data";
+import { loadAllPacks } from "./pack-loader";
+import { packRegistry } from "./pack-registry";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const IS_PROD = process.env.NODE_ENV === "production";
 const DIST_DIR = "client/dist";
+
+// Load packs synchronously at boot. Errors are reported but do not abort —
+// the server stays usable even if some packs fail to validate.
+{
+  const { packs, errors } = await loadAllPacks("./packs");
+  packRegistry.registerAll(packs);
+  if (errors.length) {
+    console.warn(`[packs] ${errors.length} pack(s) failed to load:`);
+    for (const e of errors) console.warn(`  ${e.file}:\n${e.message}`);
+  }
+  console.log(`[packs] ${packs.size} pack(s) loaded: ${[...packs.keys()].join(", ") || "(none)"}`);
+}
 
 rooms.startGcLoop();
 

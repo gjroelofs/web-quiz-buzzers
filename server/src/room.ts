@@ -1,20 +1,42 @@
 import type { ServerWebSocket } from "bun";
 import type { ServerMessage } from "@shared/messages";
 import type { GameState } from "@shared/game-state";
+import type { RoundQuestions } from "@shared/pack-types";
 import { reduce, initialState, type Action } from "./reducer";
 import type { SocketData } from "./socket-data";
+import { packRegistry } from "./pack-registry";
 
 // How long a disconnected player remains in the room before being auto-removed.
 // Allows tab refresh / phone backgrounding to seamlessly reconnect.
 export const RECONNECT_GRACE_MS = 60_000;
 
+export type StartGameError = "NOT_HOST" | "BAD_PHASE" | "PACK_NOT_FOUND";
+
 export class Room {
   state: GameState;
+  // Round questions are server-side ONLY (they include the `correct` index).
+  // Public state holds at most a single QuestionPublic projection at a time.
+  roundQuestions: RoundQuestions | null = null;
   private sockets = new Map<string, ServerWebSocket<SocketData>>();
   private disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(roomCode: string, hostId: string) {
     this.state = initialState(roomCode, hostId);
+  }
+
+  // Loads + assigns pack questions, then transitions LOBBY → ROUND_INTRO.
+  startGame(packId: string, requesterId: string): StartGameError | null {
+    if (requesterId !== this.state.hostId) return "NOT_HOST";
+    if (this.state.phase !== "LOBBY") return "BAD_PHASE";
+    const rounds = packRegistry.assignToRounds(packId);
+    if (!rounds) return "PACK_NOT_FOUND";
+    this.roundQuestions = rounds;
+    this.dispatch({
+      type: "START_GAME",
+      playerId: requesterId,
+      payload: { packId },
+    });
+    return null;
   }
 
   attachSocket(playerId: string, ws: ServerWebSocket<SocketData>): void {

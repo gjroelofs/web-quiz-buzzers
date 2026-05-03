@@ -1,0 +1,26 @@
+{
+  "name": "General Trivia",
+  "description": "A starter mix of history, science, geography, sports, and food. Difficulty ranges 1-3.",
+  "questions": [
+    { "text": "Which planet is known as the Red Planet?", "answers": ["Venus", "Mars", "Jupiter", "Saturn"], "correct": 1, "category": "Science", "difficulty": 1, "media": null },
+    { "text": "Which gas do plants absorb from the atmosphere?", "answers": ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], "correct": 2, "category": "Science", "difficulty": 1, "media": null },
+    { "text": "Who painted the Mona Lisa?", "answers": ["Michelangelo", "Raphael", "Leonardo da Vinci", "Donatello"], "correct": 2, "category": "Art", "difficulty": 1, "media": null },
+    { "text": "In what year did World War II end?", "answers": ["1942", "1945", "1948", "1950"], "correct": 1, "category": "History", "difficulty": 2, "media": null },
+    { "text": "Which is the largest ocean?", "answers": ["Atlantic", "Indian", "Arctic", "Pacific"], "correct": 3, "category": "Geography", "difficulty": 1, "media": null },
+    { "text": "What is the chemical symbol for gold?", "answers": ["Go", "Au", "Ag", "Gd"], "correct": 1, "category": "Science", "difficulty": 2, "media": null },
+    { "text": "Which sport uses a 'birdie'?", "answers": ["Tennis", "Golf", "Badminton", "Cricket"], "correct": 2, "category": "Sports", "difficulty": 1, "media": null },
+    { "text": "Mount Everest is on the border of Nepal and which country?", "answers": ["India", "China", "Bhutan", "Pakistan"], "correct": 1, "category": "Geography", "difficulty": 2, "media": null },
+    { "text": "How many strings does a standard guitar have?", "answers": ["4", "5", "6", "7"], "correct": 2, "category": "Music", "difficulty": 1, "media": null },
+    { "text": "Sushi traditionally features what main ingredient?", "answers": ["Noodles", "Vinegared rice", "Tofu", "Bread"], "correct": 1, "category": "Food", "difficulty": 1, "media": null },
+    { "text": "Who wrote 'Romeo and Juliet'?", "answers": ["Charles Dickens", "Mark Twain", "William Shakespeare", "Jane Austen"], "correct": 2, "category": "Literature", "difficulty": 1, "media": null },
+    { "text": "Which animal is the largest mammal?", "answers": ["African elephant", "Blue whale", "Giraffe", "Polar bear"], "correct": 1, "category": "Science", "difficulty": 1, "media": null },
+    { "text": "The currency of Japan is the…?", "answers": ["Won", "Yuan", "Yen", "Ringgit"], "correct": 2, "category": "Geography", "difficulty": 2, "media": null },
+    { "text": "What does 'HTTP' stand for?", "answers": ["Hyper Text Transfer Protocol", "Hyper Tool Transfer Procedure", "High Text Transport Protocol", "Hyper Transmission Text Path"], "correct": 0, "category": "Tech", "difficulty": 2, "media": null },
+    { "text": "Which artist painted the Sistine Chapel ceiling?", "answers": ["Caravaggio", "Raphael", "Michelangelo", "Botticelli"], "correct": 2, "category": "Art", "difficulty": 2, "media": { "type": "image", "src": "sistine-placeholder.png" } },
+    { "text": "What is the longest river in the world?", "answers": ["Amazon", "Nile", "Yangtze", "Mississippi"], "correct": 1, "category": "Geography", "difficulty": 2, "media": null },
+    { "text": "Which element has atomic number 1?", "answers": ["Helium", "Oxygen", "Hydrogen", "Carbon"], "correct": 2, "category": "Science", "difficulty": 2, "media": null },
+    { "text": "What instrument is played by hitting it with mallets?", "answers": ["Violin", "Xylophone", "Flute", "Trumpet"], "correct": 1, "category": "Music", "difficulty": 1, "media": { "type": "audio", "src": "xylo-placeholder.mp3" } },
+    { "text": "Which country gifted the Statue of Liberty to the USA?", "answers": ["England", "France", "Germany", "Spain"], "correct": 1, "category": "History", "difficulty": 2, "media": null },
+    { "text": "How many continents are there?", "answers": ["5", "6", "7", "8"], "correct": 2, "category": "Geography", "difficulty": 1, "media": null }
+  ]
+}
