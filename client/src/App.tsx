@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import { gameSession } from "./state/game-session";
 import { useGameState } from "./state/game-store";
 import { BuzzDebugOverlay } from "./hid/buzz-debug-overlay";
+import { PhoneClient } from "./phone/phone-client";
+import { getCurrentRoute } from "./router";
 import type { Player } from "@shared/game-state";
 
-function isDebugHidRoute(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("debug") === "hid";
-}
-
 export function App() {
-  if (isDebugHidRoute()) return <BuzzDebugOverlay />;
+  const route = getCurrentRoute();
+  if (route === "debug-hid") return <BuzzDebugOverlay />;
+  if (route === "phone") return <PhoneClient />;
   return <Lobby />;
 }
 
