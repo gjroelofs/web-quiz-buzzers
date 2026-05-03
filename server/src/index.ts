@@ -4,6 +4,7 @@ import { rooms } from "./rooms";
 import { emptySocketData } from "./socket-data";
 import { loadAllPacks } from "./pack-loader";
 import { packRegistry } from "./pack-registry";
+import { handleApiServerInfo } from "./api-routes";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const IS_PROD = process.env.NODE_ENV === "production";
@@ -33,6 +34,7 @@ const server = Bun.serve({
       if (server.upgrade(req, { data: emptySocketData() })) return;
       return new Response("WebSocket upgrade failed", { status: 400 });
     }
+    if (url.pathname === "/api/server-info") return handleApiServerInfo();
     return handleHttp(url);
   },
   websocket: websocketHandler,
