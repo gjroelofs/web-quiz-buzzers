@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { gameSession } from "@client/state/game-session";
 import type { GameState, Player } from "@shared/game-state";
 
@@ -19,6 +19,13 @@ const BUTTONS: { choice: 0 | 1 | 2 | 3; bg: string; text: string }[] = [
 export function AnswerScreen({ state }: Props) {
   const [submitted, setSubmitted] = useState<number | null>(null);
   const q = state.currentQuestion;
+
+  // Reset between questions (R2 has 4 questions, R3 has 4) and between phase
+  // transitions (e.g. R1 buzzer goes ANSWER_LOCK → REVEAL → BUZZ_OPEN q2).
+  // Without this, `submitted` would lock the buttons across rounds.
+  useEffect(() => {
+    setSubmitted(null);
+  }, [state.phase, state.questionIndex]);
 
   const onTap = (choice: 0 | 1 | 2 | 3) => {
     if (submitted !== null) return;

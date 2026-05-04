@@ -61,11 +61,12 @@ function PhaseScreen({ state, me }: { state: ReturnType<typeof useGameState> & o
         <BuzzScreen state={state} me={me} />
       );
     case "ANSWER_LOCK":
-      return isBuzzer ? (
-        <AnswerScreen state={state} me={me} />
-      ) : (
-        <WaitingScreen state={state} message="Locked. Watch the big screen." />
-      );
+      // R4 (Final): every player answers — there's no single buzzer.
+      // R1/R3: only the buzzer answers; everyone else watches.
+      if (state.currentRound === 4 || isBuzzer) {
+        return <AnswerScreen state={state} me={me} />;
+      }
+      return <WaitingScreen state={state} message="Locked. Watch the big screen." />;
     case "FINAL_WAGER":
       return <WagerScreen state={state} me={me} />;
     default:
