@@ -99,6 +99,11 @@ volume, and reduced-motion. Settings persist to localStorage.
 - **"WebHID not supported"** — open the host page in Chrome or Edge.
 - **Phone can't connect** — confirm the QR URL uses your **LAN IP**, not
   `localhost`. Override detection with `HOST_IP=192.168.1.42 bun run dev`.
+  Also check the host's firewall: on Linux/`ufw` run
+  `sudo ufw allow 5173/tcp` (dev) or `sudo ufw allow 3000/tcp` (prod);
+  on macOS check System Settings → Network → Firewall; on Windows allow
+  inbound on the port via Windows Firewall. If both pass, your router may
+  have **client isolation** enabled — disable it on that SSID.
 - **No audio on first load** — modern browsers block autoplay. Click anywhere
   on the host page once and the audio context unlocks.
 - **Buzz controller not detected** — try unplugging/replugging the dongle. On
