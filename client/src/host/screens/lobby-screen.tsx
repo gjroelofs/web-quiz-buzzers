@@ -33,7 +33,7 @@ const keyOf = (d: number, c: number): NamingKey => `${d}:${c}`;
 
 export function LobbyScreen({ state, serverInfo }: Props) {
   const { dongleCount, manager } = useBuzzManagerStatus();
-  const [namingSlot, setNamingSlot] = useState<NamingKey | null>(null);
+  const [namingSlots, setNamingSlots] = useState<Set<NamingKey>>(new Set());
   const [selectedPack, setSelectedPack] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,10 +53,14 @@ export function LobbyScreen({ state, serverInfo }: Props) {
           pl.buzzSlot?.controllerIndex === p.controllerIndex,
       );
       if (occupied) return;
-      if (namingSlot === slotKey) return;
-      setNamingSlot(slotKey);
+      setNamingSlots((prev) => {
+        if (prev.has(slotKey)) return prev;
+        const next = new Set(prev);
+        next.add(slotKey);
+        return next;
+      });
     });
-  }, [state.players, namingSlot]);
+  }, [state.players]);
 
   const onSubmitName = (dongleId: number, controllerIndex: ControllerSlot, name: string) => {
     gameSession.send({
@@ -68,10 +72,20 @@ export function LobbyScreen({ state, serverInfo }: Props) {
         buzzSlot: { dongleId, controllerIndex },
       },
     });
-    setNamingSlot(null);
+    setNamingSlots((prev) => {
+      const next = new Set(prev);
+      next.delete(keyOf(dongleId, controllerIndex));
+      return next;
+    });
   };
 
-  const onCancelName = () => setNamingSlot(null);
+  const onCancelName = (dongleId: number, controllerIndex: ControllerSlot) => {
+    setNamingSlots((prev) => {
+      const next = new Set(prev);
+      next.delete(keyOf(dongleId, controllerIndex));
+      return next;
+    });
+  };
 
   const phonePlayers = state.players.filter((p) => p.deviceType === "phone");
   const buzzPlayers = state.players.filter((p) => p.deviceType === "buzz");
@@ -146,11 +160,11 @@ export function LobbyScreen({ state, serverInfo }: Props) {
                       dongle={d}
                       controllerIndex={ci as ControllerSlot}
                       player={player}
-                      isNaming={namingSlot === slotKey}
+                      isNaming={namingSlots.has(slotKey)}
                       onSubmitName={(name) =>
                         onSubmitName(d.dongleId, ci as ControllerSlot, name)
                       }
-                      onCancelName={onCancelName}
+                      onCancelName={() => onCancelName(d.dongleId, ci as ControllerSlot)}
                     />
                   );
                 })}
