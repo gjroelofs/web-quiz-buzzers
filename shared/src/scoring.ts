@@ -27,8 +27,8 @@ export const BUZZ_ANSWER_WINDOW_MS = 5_000;
 export const STEAL_ANSWER_WINDOW_MS = 3_000;
 export const QUESTION_REVEAL_AUTO_ADVANCE_MS = 3_000;
 export const ROUND_INTRO_AUTO_ADVANCE_MS = 3_000;
-export const SCOREBOARD_AUTO_ADVANCE_MS = 5_000;
-export const REVEAL_AUTO_ADVANCE_MS = 4_000;
+export const SCOREBOARD_AUTO_ADVANCE_MS = 20_000;
+export const REVEAL_AUTO_ADVANCE_MS = 6_000;
 
 // Buzz-open windows (max idle wait before auto-reveal). For R1/R3 this lets
 // us not stall forever if nobody buzzes; clients may also trigger via host.

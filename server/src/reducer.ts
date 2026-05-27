@@ -106,6 +106,7 @@ export function reduce(state: GameState, action: Action): GameState {
     case "WAGER":
     case "NEXT_QUESTION":
     case "RESET_GAME":
+    case "TOGGLE_PAUSE":
       return state;
 
     case "PING":

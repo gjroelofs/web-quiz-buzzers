@@ -7,16 +7,16 @@ import { R2_WINDOW_MS, BUZZ_OPEN_IDLE_MS } from "@shared/scoring";
 import { AnimatedBg, ScanSweep, SplitText } from "@client/anim";
 
 const COLORS = [
-  "bg-yellow-400 text-black",
-  "bg-green-500 text-black",
-  "bg-orange-500 text-black",
   "bg-blue-500 text-white",
+  "bg-orange-500 text-black",
+  "bg-green-500 text-black",
+  "bg-yellow-400 text-black",
 ];
 const ACCENT_RING = [
-  "shadow-[0_0_30px_rgba(250,204,21,0.6)]",
-  "shadow-[0_0_30px_rgba(34,197,94,0.6)]",
-  "shadow-[0_0_30px_rgba(249,115,22,0.6)]",
   "shadow-[0_0_30px_rgba(59,130,246,0.6)]",
+  "shadow-[0_0_30px_rgba(249,115,22,0.6)]",
+  "shadow-[0_0_30px_rgba(34,197,94,0.6)]",
+  "shadow-[0_0_30px_rgba(250,204,21,0.6)]",
 ];
 
 interface Props {
@@ -37,6 +37,10 @@ export function BuzzInScreen({ state }: Props) {
 
       <header className="flex items-baseline justify-between text-xs uppercase tracking-widest opacity-80 font-display">
         <span>Round {state.currentRound} · Q{state.questionIndex + 1}</span>
+        <span>{q.category}</span>
+      </header>
+
+      <div className="flex justify-center mt-4 p-4">
         <motion.span
           animate={{
             scale: [1, 1.18, 1],
@@ -44,18 +48,11 @@ export function BuzzInScreen({ state }: Props) {
             opacity: [0.7, 1, 0.7],
           }}
           transition={{ duration: 0.85, repeat: Infinity, ease: "easeInOut" }}
-          className={`text-base font-black ${
-            isSpeed
-              ? "text-neon-cyan animate-chromatic-shake"
-              : isSteal
-              ? "text-red-400 animate-chromatic-shake"
-              : "text-neon-pink"
-          }`}
+          className={`inline-block text-4xl md:text-5xl font-black font-display text-neon-pink drop-shadow-[0_0_20px_currentColor]`}
         >
           {isSpeed ? "ANSWER NOW!" : isSteal ? "STEAL OPEN!" : "BUZZ IN!"}
         </motion.span>
-        <span>{q.category}</span>
-      </header>
+      </div>
 
       {/* Question + media: centered vertical block. */}
       <div className="flex-1 flex flex-col items-center justify-center text-center min-h-0 py-6">
@@ -89,26 +86,36 @@ export function BuzzInScreen({ state }: Props) {
 
       {/* Answers anchored under the question. */}
       <div className="grid grid-cols-2 gap-4">
-        {q.answers.map((a, i) => (
-          <motion.div
-            key={i}
-            initial={{ y: 60, opacity: 0, rotateX: -45, scale: 0.9 }}
-            animate={{ y: 0, opacity: 1, rotateX: 0, scale: 1 }}
-            transition={{
-              duration: 0.55,
-              delay: 0.5 + i * 0.14,
-              ease: [0.34, 1.56, 0.64, 1],
-            }}
-            whileHover={{ scale: 1.03, rotate: 0.5 }}
-            className={`${COLORS[i]} ${ACCENT_RING[i]} relative rounded-lg p-5 flex items-center gap-4 text-2xl font-display overflow-hidden`}
-          >
-            <ScanSweep />
-            <span className="text-5xl opacity-70 font-black drop-shadow">
-              {String.fromCharCode(65 + i)}
-            </span>
-            <span className="leading-tight relative z-10">{a}</span>
-          </motion.div>
-        ))}
+        {q.answers.map((a, i) => {
+          const isWrong = state.wrongAnswers?.includes(i) ?? false;
+          return (
+            <motion.div
+              key={i}
+              initial={{ y: 60, opacity: 0, rotateX: -45, scale: 0.9 }}
+              animate={
+                isWrong
+                  ? { y: 0, opacity: 0.35, rotateX: 0, scale: 0.92, filter: "saturate(0.2) brightness(0.6)" }
+                  : { y: 0, opacity: 1, rotateX: 0, scale: 1 }
+              }
+              transition={{
+                duration: 0.55,
+                delay: 0.5 + i * 0.14,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
+              whileHover={isWrong ? {} : { scale: 1.03, rotate: 0.5 }}
+              className={`${COLORS[i]} ${isWrong ? "" : ACCENT_RING[i]} relative rounded-lg p-5 flex items-center gap-4 text-2xl font-display overflow-hidden`}
+            >
+              {!isWrong && <ScanSweep />}
+              <span className="text-5xl opacity-70 font-black drop-shadow">
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className={`leading-tight relative z-10 ${isWrong ? "line-through" : ""}`}>{a}</span>
+              {isWrong && (
+                <span className="ml-auto text-4xl opacity-70">✗</span>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Speed round: live submission status under the answers. */}

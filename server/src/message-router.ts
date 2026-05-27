@@ -65,14 +65,21 @@ export function handleClientMessage(
         return;
       }
       const playerId = randomUUID();
-      ws.data.playerId = playerId;
-      ws.data.roomCode = room.state.roomCode;
+      // Don't overwrite ws.data if the host is registering a buzz player on
+      // its behalf — the host's socket identity must stay as hostId.
+      const isHost = ws.data.playerId === room.state.hostId;
+      if (!isHost) {
+        ws.data.playerId = playerId;
+        ws.data.roomCode = room.state.roomCode;
+      }
       // Ack first (see CREATE_ROOM rationale).
       send(ws, {
         type: "JOIN_ACK",
         payload: { roomCode: room.state.roomCode, playerId },
       });
-      room.attachSocket(playerId, ws);
+      if (!isHost) {
+        room.attachSocket(playerId, ws);
+      }
       room.dispatch({ type: "JOIN_ROOM", playerId, payload: msg.payload });
       return;
     }
@@ -130,7 +137,8 @@ export function handleClientMessage(
     case "ANSWER":
     case "WAGER":
     case "NEXT_QUESTION":
-    case "RESET_GAME": {
+    case "RESET_GAME":
+    case "TOGGLE_PAUSE": {
       if (!ws.data.playerId || !ws.data.roomCode) {
         sendError(ws, "NOT_IN_ROOM", "join a room first");
         return;
@@ -142,26 +150,53 @@ export function handleClientMessage(
       }
       const playerId = ws.data.playerId;
       switch (msg.type) {
-        case "BUZZ":
-          room.handleBuzz(playerId);
+        case "BUZZ": {
+          const targetId =
+            msg.payload?.buzzPlayerId && playerId === room.state.hostId
+              ? msg.payload.buzzPlayerId
+              : playerId;
+          room.handleBuzz(targetId);
           break;
-        case "ANSWER":
-          room.handleAnswer(playerId, msg.payload.choice);
+        }
+        case "ANSWER": {
+          const targetId =
+            msg.payload.buzzPlayerId && playerId === room.state.hostId
+              ? msg.payload.buzzPlayerId
+              : playerId;
+          room.handleAnswer(targetId, msg.payload.choice);
           break;
-        case "WAGER":
-          room.handleWager(playerId, msg.payload.amount);
+        }
+        case "WAGER": {
+          const targetId =
+            msg.payload.buzzPlayerId && playerId === room.state.hostId
+              ? msg.payload.buzzPlayerId
+              : playerId;
+          room.handleWager(targetId, msg.payload.amount);
           break;
+        }
         case "NEXT_QUESTION":
           room.handleNextQuestion(playerId);
           break;
         case "RESET_GAME":
           room.handleResetGame(playerId);
           break;
+        case "TOGGLE_PAUSE":
+          room.handleTogglePause(playerId);
+          break;
         case "LEAVE": {
-          const action = { ...msg, playerId } as Action;
+          // If the host sends LEAVE with a buzzPlayerId, remove that player
+          // instead (buzz controllers share the host's socket).
+          const targetId =
+            msg.payload?.buzzPlayerId &&
+            playerId === room.state.hostId
+              ? msg.payload.buzzPlayerId
+              : playerId;
+          const action = { type: "LEAVE" as const, playerId: targetId, payload: msg.payload ?? {} } as Action;
           room.dispatch(action);
-          ws.data.playerId = null;
-          ws.data.roomCode = null;
+          if (targetId === playerId) {
+            ws.data.playerId = null;
+            ws.data.roomCode = null;
+          }
           break;
         }
       }

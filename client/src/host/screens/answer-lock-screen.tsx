@@ -15,6 +15,20 @@ interface Props {
   state: GameState;
 }
 
+const FINAL_COLORS = [
+  "bg-blue-500 text-white",
+  "bg-orange-500 text-black",
+  "bg-green-500 text-black",
+  "bg-yellow-400 text-black",
+];
+
+const FINAL_ACCENT_RING = [
+  "shadow-[0_0_30px_rgba(59,130,246,0.6)]",
+  "shadow-[0_0_30px_rgba(249,115,22,0.6)]",
+  "shadow-[0_0_30px_rgba(34,197,94,0.6)]",
+  "shadow-[0_0_30px_rgba(250,204,21,0.6)]",
+];
+
 export function AnswerLockScreen({ state }: Props) {
   const isFinal = state.currentRound === 4;
   if (isFinal) return <FinalAnswerLock state={state} />;
@@ -102,42 +116,82 @@ function FinalAnswerLock({ state }: { state: GameState }) {
   const answers = state.speedRoundAnswers ?? {};
   const answered = state.players.filter((p) => answers[p.id] != null).length;
   const total = state.players.length;
+  const q = state.currentQuestion;
   return (
-    <div className="min-h-screen flex flex-col items-center px-6 py-8 relative">
+    <div className="min-h-screen text-cyan-100 flex flex-col px-8 py-6 relative">
       <AnimatedBg variant="danger" />
-      <p className="text-xs uppercase tracking-widest opacity-80 mt-2 mb-2 font-display animate-chromatic-shake text-neon-gold">
-        Final question — answer!
-      </p>
-      {/* Question centered with breathing room. */}
-      <div className="flex-1 flex items-center justify-center text-center w-full">
+
+      <header className="flex items-baseline justify-between text-xs uppercase tracking-widest opacity-80 font-display">
+        <span>Round {state.currentRound} · Q{state.questionIndex + 1}</span>
+        <span>{q?.category}</span>
+      </header>
+
+      <div className="flex justify-center mt-4 p-4">
+        <motion.span
+          animate={{
+            scale: [1, 1.18, 1],
+            rotate: [-1, 2, -1],
+            opacity: [0.7, 1, 0.7],
+          }}
+          transition={{ duration: 0.85, repeat: Infinity, ease: "easeInOut" }}
+          className="inline-block text-4xl md:text-5xl font-black font-display text-neon-gold drop-shadow-[0_0_20px_currentColor]"
+        >
+          FINAL — ANSWER!
+        </motion.span>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center text-center min-h-0 py-4">
         <motion.h1
           initial={{ scale: 0.6, opacity: 0, y: 30 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "backOut" }}
           className="text-5xl md:text-7xl font-display text-neon-gold max-w-4xl text-glow-gold leading-tight"
         >
-          {state.currentQuestion?.text}
+          {q?.text}
         </motion.h1>
       </div>
-      <motion.p
-        key={answered}
-        initial={{ scale: 1.4, opacity: 0.6 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="text-2xl text-neon-cyan font-display tabular-nums"
-      >
-        <span className="text-neon-gold">{answered}</span> / {total} answered
-      </motion.p>
-      <ul className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 max-w-5xl w-full">
-        {state.players.map((p) => (
-          <PlayerStatusPill
-            key={p.id}
-            player={p}
-            answered={answers[p.id] != null}
-          />
-        ))}
-      </ul>
+
+      {q && (
+        <div className="grid grid-cols-2 gap-4">
+          {q.answers.map((a, i) => (
+            <motion.div
+              key={i}
+              initial={{ y: 60, opacity: 0, rotateX: -45, scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, rotateX: 0, scale: 1 }}
+              transition={{
+                duration: 0.55,
+                delay: 0.5 + i * 0.14,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
+              className={`${FINAL_COLORS[i]} ${FINAL_ACCENT_RING[i]} rounded-lg p-5 flex items-center gap-4 text-2xl font-display overflow-hidden`}
+            >
+              <span className="text-5xl opacity-70 font-black drop-shadow">
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className="leading-tight">{a}</span>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex items-center justify-between">
+        <ul className="flex gap-2 flex-wrap">
+          {state.players.map((p) => (
+            <PlayerStatusPill
+              key={p.id}
+              player={p}
+              answered={answers[p.id] != null}
+              wager={state.wagers?.[p.id]}
+            />
+          ))}
+        </ul>
+        <span className="text-xl text-neon-cyan font-display tabular-nums">
+          <span className="text-neon-gold">{answered}</span>/{total}
+        </span>
+      </div>
+
       {state.buzzWindowEndsAt && (
-        <div className="mt-6 w-96">
+        <div className="mt-3 px-12">
           <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={FINAL_ANSWER_WINDOW_MS} />
         </div>
       )}
@@ -148,9 +202,11 @@ function FinalAnswerLock({ state }: { state: GameState }) {
 function PlayerStatusPill({
   player,
   answered,
+  wager,
 }: {
   player: Player;
   answered: boolean;
+  wager?: number;
 }) {
   return (
     <motion.li
@@ -168,9 +224,14 @@ function PlayerStatusPill({
       }`}
     >
       <PlayerAvatar player={player} size="sm" />
-      <span className="font-display text-sm tracking-wider truncate flex-1">
-        {player.name}
-      </span>
+      <div className="flex-1 min-w-0">
+        <span className="font-display text-sm tracking-wider truncate block">
+          {player.name}
+        </span>
+        {wager != null && (
+          <span className="text-xs text-neon-gold opacity-80 tabular-nums">⚡{wager}</span>
+        )}
+      </div>
       <span
         className={`text-lg font-display ${
           answered ? "text-neon-green" : "opacity-30"

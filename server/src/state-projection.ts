@@ -16,18 +16,8 @@ const HIDDEN_QUESTION: QuestionPublic = {
 };
 
 export function projectStateForBroadcast(state: GameState): GameState {
+  // Wagers are visible to all players (shared screen party game).
   let out: GameState = state;
-
-  // Strip per-player wager amounts until the round reveals — keep keys for
-  // the "X/N wagered" counter UI in the FINAL_WAGER screen.
-  if (state.wagers && state.phase !== "REVEAL" && state.phase !== "WINNER") {
-    const ids = Object.keys(state.wagers);
-    if (ids.length > 0) {
-      const stripped: Record<string, number> = {};
-      for (const id of ids) stripped[id] = 0;
-      out = { ...out, wagers: stripped };
-    }
-  }
 
   // Strip per-player speed-round picks (and timestamps) until reveal — keep
   // keys for "X/N answered" counter UI on the host screen.

@@ -21,6 +21,9 @@ import {
   FINAL_ANSWER_WINDOW_MS,
   FINAL_WAGER_WINDOW_MS,
   R2_WINDOW_MS,
+  REVEAL_AUTO_ADVANCE_MS,
+  ROUND_INTRO_AUTO_ADVANCE_MS,
+  SCOREBOARD_AUTO_ADVANCE_MS,
   STEAL_ANSWER_WINDOW_MS,
   computeR2Score,
   paramsForRound,
@@ -40,7 +43,8 @@ export type TimerEvent =
   | "STEAL_ANSWER_WINDOW"
   | "R2_WINDOW"
   | "FINAL_WAGER_WINDOW"
-  | "FINAL_ANSWER_WINDOW";
+  | "FINAL_ANSWER_WINDOW"
+  | "AUTO_ADVANCE";
 
 const ALL_TIMERS: string[] = [
   "BUZZ_OPEN_IDLE",
@@ -49,6 +53,7 @@ const ALL_TIMERS: string[] = [
   "R2_WINDOW",
   "FINAL_WAGER_WINDOW",
   "FINAL_ANSWER_WINDOW",
+  "AUTO_ADVANCE",
 ];
 
 // === public API ============================================================
@@ -87,6 +92,7 @@ export function advanceFromIntroOrReveal(
         lastReveal: undefined,
       },
       clear: ALL_TIMERS,
+      schedule: { name: "AUTO_ADVANCE", delayMs: ROUND_INTRO_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
     };
   }
   // REVEAL → next question, or round-end transition
@@ -107,6 +113,7 @@ export function advanceFromIntroOrReveal(
     return {
       state: { ...state, phase: "SCOREBOARD", currentQuestion: undefined },
       clear: ALL_TIMERS,
+      schedule: { name: "AUTO_ADVANCE", delayMs: SCOREBOARD_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
     };
   }
   // From BUZZ_OPEN with no buzzes, host can force a reveal → no scoring.
@@ -121,6 +128,7 @@ export function advanceFromIntroOrReveal(
 export function handleBuzz(state: GameState, playerId: string): EngineResult {
   if (state.phase !== "BUZZ_OPEN") return { state };
   if (state.currentRound === 2 || state.currentRound === 4) return { state };
+  if (!state.players.some((p) => p.id === playerId)) return { state };
   if (state.lockedOutPlayerIds.includes(playerId)) return { state };
   if (state.buzzedPlayerId) return { state };
   // First valid buzz wins. Lock the question to this player; start answer timer.
@@ -241,6 +249,15 @@ export function handleTimerExpired(
       // Auto-resolve final answers (any non-answers counted as 'no answer' → wrong).
       if (state.phase !== "ANSWER_LOCK" || state.currentRound !== 4) return { state };
       return resolveFinalAnswer(state, rounds);
+    case "AUTO_ADVANCE":
+      // Auto-advance from ROUND_INTRO, REVEAL, or SCOREBOARD.
+      if (state.phase === "ROUND_INTRO" || state.phase === "REVEAL" || state.phase === "SCOREBOARD") {
+        if (state.phase === "SCOREBOARD" && state.currentRound === 3) {
+          return enterFinalWager(state, rounds);
+        }
+        return advanceFromIntroOrReveal(state, rounds);
+      }
+      return { state };
   }
 }
 
@@ -288,6 +305,7 @@ function enterQuestionAndOpen(
     return {
       state: { ...state, phase: "SCOREBOARD", currentQuestion: undefined },
       clear: ALL_TIMERS,
+      schedule: { name: "AUTO_ADVANCE", delayMs: SCOREBOARD_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
     };
   }
 
@@ -306,6 +324,7 @@ function enterQuestionAndOpen(
       lockedOutPlayerIds: [],
       speedRoundAnswers: undefined,
       lastReveal: undefined,
+      wrongAnswers: undefined,
       buzzWindowEndsAt: Date.now() + windowMs,
     },
     clear: ALL_TIMERS,
@@ -359,8 +378,8 @@ function resolveBuzzAnswer(
     });
   }
   // Original buzzer wrong: open steal window for everyone else.
-  // (openSteal reads state.buzzedPlayerId to know who to lock out, then clears it.)
-  return openSteal(state);
+  const wrongAnswers = [...(state.wrongAnswers ?? []), choice];
+  return openSteal({ ...state, wrongAnswers });
 }
 
 function openSteal(state: GameState): EngineResult {
@@ -427,6 +446,8 @@ function enterReveal(
   extra?: Partial<RevealResult>,
 ): EngineResult {
   const safeDeltas: Record<string, number> = deltas ?? {};
+  // Always resolve the correct answer so the reveal screen can highlight it.
+  const resolvedCorrect = correctIndex ?? getCurrentQuestion(state, rounds)?.correct ?? -1;
   // Apply deltas to player scores. Final round clamps at 0 (no negative scores).
   const isFinal = state.currentRound === 4;
   const players: Player[] = state.players.map((p) => {
@@ -436,7 +457,7 @@ function enterReveal(
     return { ...p, score: next };
   });
   const reveal: RevealResult = {
-    correctIndex: correctIndex ?? -1,
+    correctIndex: resolvedCorrect,
     scoreDeltas: safeDeltas,
     ...extra,
   };
@@ -451,6 +472,7 @@ function enterReveal(
       buzzedPlayerId: extra?.buzzedPlayerId ?? state.buzzedPlayerId,
     },
     clear: ALL_TIMERS,
+    schedule: { name: "AUTO_ADVANCE", delayMs: REVEAL_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
   };
 }
 

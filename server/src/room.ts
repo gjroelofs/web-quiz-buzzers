@@ -7,6 +7,7 @@ import type { SocketData } from "./socket-data";
 import { packRegistry } from "./pack-registry";
 import { TimerManager } from "./timer-manager";
 import { projectStateForBroadcast } from "./state-projection";
+import { ROUND_INTRO_AUTO_ADVANCE_MS, REVEAL_AUTO_ADVANCE_MS, SCOREBOARD_AUTO_ADVANCE_MS } from "@shared/scoring";
 import {
   advanceFromIntroOrReveal,
   enterFinalWager,
@@ -49,6 +50,12 @@ export class Room {
       playerId: requesterId,
       payload: { packId },
     });
+    // Auto-advance from ROUND_INTRO to first question.
+    this.timers.schedule("AUTO_ADVANCE", ROUND_INTRO_AUTO_ADVANCE_MS, () =>
+      this.fireTimer("AUTO_ADVANCE"),
+    );
+    this.state = { ...this.state, autoAdvanceAt: Date.now() + ROUND_INTRO_AUTO_ADVANCE_MS };
+    this.broadcast();
     return null;
   }
 
@@ -85,6 +92,31 @@ export class Room {
       questionIndex: 0,
       lockedOutPlayerIds: [],
     };
+    this.broadcast();
+  }
+
+  // Host action: TOGGLE_PAUSE. Pauses or resumes auto-advance timers.
+  handleTogglePause(playerId: string): void {
+    if (playerId !== this.state.hostId) return;
+    if (this.state.paused) {
+      // Resume: re-schedule auto-advance if in a phase that auto-advances.
+      let delayMs = 0;
+      const phase = this.state.phase;
+      if (phase === "ROUND_INTRO") delayMs = ROUND_INTRO_AUTO_ADVANCE_MS;
+      else if (phase === "REVEAL") delayMs = REVEAL_AUTO_ADVANCE_MS;
+      else if (phase === "SCOREBOARD") delayMs = SCOREBOARD_AUTO_ADVANCE_MS;
+
+      if (delayMs && this.roundQuestions) {
+        this.timers.schedule("AUTO_ADVANCE", delayMs, () => this.fireTimer("AUTO_ADVANCE"));
+        this.state = { ...this.state, paused: false, autoAdvanceAt: Date.now() + delayMs };
+      } else {
+        this.state = { ...this.state, paused: false, autoAdvanceAt: undefined };
+      }
+    } else {
+      // Pause: clear auto-advance timer.
+      this.state = { ...this.state, paused: true, autoAdvanceAt: undefined };
+      this.timers.clear("AUTO_ADVANCE");
+    }
     this.broadcast();
   }
 
@@ -215,7 +247,13 @@ export class Room {
     }
     if (result.schedule) {
       const { name, delayMs, event } = result.schedule;
-      this.timers.schedule(name, delayMs, () => this.fireTimer(event));
+      // Don't schedule auto-advance while paused.
+      if (!(name === "AUTO_ADVANCE" && this.state.paused)) {
+        this.timers.schedule(name, delayMs, () => this.fireTimer(event));
+        if (name === "AUTO_ADVANCE") {
+          result.state = { ...result.state, autoAdvanceAt: Date.now() + delayMs };
+        }
+      }
     }
     this.state = result.state;
     if (this.state !== prev) this.broadcast();

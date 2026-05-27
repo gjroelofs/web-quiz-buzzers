@@ -15,10 +15,6 @@ export default defineConfig({
     port: 5173,
     host: "0.0.0.0",
     proxy: {
-      "/ws": {
-        target: "ws://localhost:3000",
-        ws: true,
-      },
       // Forward HTTP API + static media/audio to Bun in dev. Without this,
       // Vite's SPA fallback would 200-return index.html for these paths and
       // confuse the client.

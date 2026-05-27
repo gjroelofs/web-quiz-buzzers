@@ -33,7 +33,8 @@ const keyOf = (d: number, c: number): NamingKey => `${d}:${c}`;
 
 export function LobbyScreen({ state, serverInfo }: Props) {
   const { dongleCount, manager } = useBuzzManagerStatus();
-  const [namingSlot, setNamingSlot] = useState<NamingKey | null>(null);
+  const [namingSlots, setNamingSlots] = useState<Set<NamingKey>>(new Set());
+  const [confirmLeaveSlots, setConfirmLeaveSlots] = useState<Set<NamingKey>>(new Set());
   const [selectedPack, setSelectedPack] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,17 +47,54 @@ export function LobbyScreen({ state, serverInfo }: Props) {
     return buzzManager.on((p, kind) => {
       if (kind !== "press") return;
       if (p.buttonIndex !== 0) return;
+      if (state.phase !== "LOBBY") return;
       const slotKey = keyOf(p.dongleId, p.controllerIndex);
-      const occupied = state.players.some(
+
+      // Check if this slot is already claimed by a player
+      const player = state.players.find(
         (pl) =>
           pl.buzzSlot?.dongleId === p.dongleId &&
           pl.buzzSlot?.controllerIndex === p.controllerIndex,
       );
-      if (occupied) return;
-      if (namingSlot === slotKey) return;
-      setNamingSlot(slotKey);
+
+      if (player) {
+        // Claimed slot: double-press to leave
+        setConfirmLeaveSlots((prev) => {
+          if (prev.has(slotKey)) {
+            // Second press — remove the player
+            gameSession.send({
+              type: "LEAVE",
+              payload: { buzzPlayerId: player.id },
+            });
+            const next = new Set(prev);
+            next.delete(slotKey);
+            return next;
+          }
+          // First press — enter confirm state, auto-clear after 3s
+          const next = new Set(prev);
+          next.add(slotKey);
+          setTimeout(() => {
+            setConfirmLeaveSlots((cur) => {
+              if (!cur.has(slotKey)) return cur;
+              const n = new Set(cur);
+              n.delete(slotKey);
+              return n;
+            });
+          }, 3000);
+          return next;
+        });
+        return;
+      }
+
+      // Unclaimed slot: enter naming mode
+      setNamingSlots((prev) => {
+        if (prev.has(slotKey)) return prev;
+        const next = new Set(prev);
+        next.add(slotKey);
+        return next;
+      });
     });
-  }, [state.players, namingSlot]);
+  }, [state.players, state.phase]);
 
   const onSubmitName = (dongleId: number, controllerIndex: ControllerSlot, name: string) => {
     gameSession.send({
@@ -68,10 +106,20 @@ export function LobbyScreen({ state, serverInfo }: Props) {
         buzzSlot: { dongleId, controllerIndex },
       },
     });
-    setNamingSlot(null);
+    setNamingSlots((prev) => {
+      const next = new Set(prev);
+      next.delete(keyOf(dongleId, controllerIndex));
+      return next;
+    });
   };
 
-  const onCancelName = () => setNamingSlot(null);
+  const onCancelName = (dongleId: number, controllerIndex: ControllerSlot) => {
+    setNamingSlots((prev) => {
+      const next = new Set(prev);
+      next.delete(keyOf(dongleId, controllerIndex));
+      return next;
+    });
+  };
 
   const phonePlayers = state.players.filter((p) => p.deviceType === "phone");
   const buzzPlayers = state.players.filter((p) => p.deviceType === "buzz");
@@ -84,7 +132,7 @@ export function LobbyScreen({ state, serverInfo }: Props) {
   const canStart = state.players.length >= 1 && selectedPack !== null;
 
   return (
-    <div className="min-h-screen text-cyan-100 p-6 font-body relative">
+    <div className="min-h-screen text-cyan-100 p-6 font-body relative overflow-hidden">
       <AnimatedBg variant="grid" />
 
       <header className="flex items-baseline gap-6">
@@ -146,17 +194,28 @@ export function LobbyScreen({ state, serverInfo }: Props) {
                       dongle={d}
                       controllerIndex={ci as ControllerSlot}
                       player={player}
-                      isNaming={namingSlot === slotKey}
+                      isNaming={namingSlots.has(slotKey)}
+                      confirmingLeave={confirmLeaveSlots.has(slotKey)}
                       onSubmitName={(name) =>
                         onSubmitName(d.dongleId, ci as ControllerSlot, name)
                       }
-                      onCancelName={onCancelName}
+                      onCancelName={() => onCancelName(d.dongleId, ci as ControllerSlot)}
                     />
                   );
                 })}
               </div>
             </motion.div>
           ))}
+
+          {buzzManager.isSupported() && (
+            <button
+              type="button"
+              onClick={() => buzzManager.requestDongle()}
+              className="mt-2 px-4 py-2 text-sm font-display uppercase tracking-widest border border-neon-cyan text-neon-cyan rounded hover:bg-neon-cyan/10 transition-colors"
+            >
+              + Connect More Buzz Controllers
+            </button>
+          )}
 
           <h2 className="text-sm uppercase tracking-widest opacity-60 mt-6 mb-2 font-display">
             Phone Players ({phonePlayers.length})

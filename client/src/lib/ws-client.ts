@@ -19,9 +19,15 @@ export class WSClient {
   private closedByUser = false;
 
   constructor(url?: string) {
-    this.url =
-      url ??
-      `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
+    if (url) {
+      this.url = url;
+    } else {
+      // In dev mode (Vite on :5173), connect WS directly to the Bun server
+      // on :3000 because Vite's WS proxy is unreliable under Bun on Windows.
+      const host = location.port === "5173" ? `${location.hostname}:3000` : location.host;
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      this.url = `${proto}://${host}/ws`;
+    }
   }
 
   connect(): void {
@@ -42,6 +48,7 @@ export class WSClient {
         console.warn("[ws] invalid JSON from server");
         return;
       }
+      console.log("[ws] received:", msg.type, msg.type === "STATE_UPDATE" ? "phase=" + (msg as any).payload?.state?.phase : JSON.stringify((msg as any).payload));
       for (const h of this.messageHandlers) h(msg);
     });
     ws.addEventListener("close", () => {
@@ -59,7 +66,10 @@ export class WSClient {
 
   send(msg: ClientMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log("[ws] sending:", msg.type, msg);
       this.ws.send(JSON.stringify(msg));
+    } else {
+      console.warn("[ws] send failed, readyState:", this.ws?.readyState);
     }
   }
 

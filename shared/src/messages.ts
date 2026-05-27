@@ -16,12 +16,13 @@ export type ClientMessage =
     }
   | { type: "RECONNECT"; payload: { roomCode: string; playerId: string } }
   | { type: "START_GAME"; payload: { packId: string } }
-  | { type: "BUZZ"; payload?: Record<string, never> }
-  | { type: "ANSWER"; payload: { choice: 0 | 1 | 2 | 3 } }
-  | { type: "WAGER"; payload: { amount: number } }
+  | { type: "BUZZ"; payload?: { buzzPlayerId?: string } }
+  | { type: "ANSWER"; payload: { choice: 0 | 1 | 2 | 3; buzzPlayerId?: string } }
+  | { type: "WAGER"; payload: { amount: number; buzzPlayerId?: string } }
   | { type: "NEXT_QUESTION"; payload?: Record<string, never> }
   | { type: "RESET_GAME"; payload?: Record<string, never> }
-  | { type: "LEAVE"; payload?: Record<string, never> };
+  | { type: "TOGGLE_PAUSE"; payload?: Record<string, never> }
+  | { type: "LEAVE"; payload?: { buzzPlayerId?: string } };
 
 // Server → Client.
 export type ServerMessage =
