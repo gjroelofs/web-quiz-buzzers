@@ -47,6 +47,7 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("NEXT_QUESTION"), payload: emptyPayload }),
   z.object({ type: z.literal("RESET_GAME"), payload: emptyPayload }),
+  z.object({ type: z.literal("TOGGLE_PAUSE"), payload: emptyPayload }),
   z.object({
     type: z.literal("LEAVE"),
     payload: z.object({ buzzPlayerId: z.string().min(1).max(64) }).optional(),

@@ -73,5 +73,7 @@ export interface GameState {
   wagers?: Record<string, number>;
   lastReveal?: RevealResult;
   wrongAnswers?: number[];
+  paused?: boolean;
+  autoAdvanceAt?: number;
   startedAt?: number;
 }

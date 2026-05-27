@@ -137,7 +137,8 @@ export function handleClientMessage(
     case "ANSWER":
     case "WAGER":
     case "NEXT_QUESTION":
-    case "RESET_GAME": {
+    case "RESET_GAME":
+    case "TOGGLE_PAUSE": {
       if (!ws.data.playerId || !ws.data.roomCode) {
         sendError(ws, "NOT_IN_ROOM", "join a room first");
         return;
@@ -178,6 +179,9 @@ export function handleClientMessage(
           break;
         case "RESET_GAME":
           room.handleResetGame(playerId);
+          break;
+        case "TOGGLE_PAUSE":
+          room.handleTogglePause(playerId);
           break;
         case "LEAVE": {
           // If the host sends LEAVE with a buzzPlayerId, remove that player

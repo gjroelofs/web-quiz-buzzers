@@ -21,6 +21,9 @@ import {
   FINAL_ANSWER_WINDOW_MS,
   FINAL_WAGER_WINDOW_MS,
   R2_WINDOW_MS,
+  REVEAL_AUTO_ADVANCE_MS,
+  ROUND_INTRO_AUTO_ADVANCE_MS,
+  SCOREBOARD_AUTO_ADVANCE_MS,
   STEAL_ANSWER_WINDOW_MS,
   computeR2Score,
   paramsForRound,
@@ -40,7 +43,8 @@ export type TimerEvent =
   | "STEAL_ANSWER_WINDOW"
   | "R2_WINDOW"
   | "FINAL_WAGER_WINDOW"
-  | "FINAL_ANSWER_WINDOW";
+  | "FINAL_ANSWER_WINDOW"
+  | "AUTO_ADVANCE";
 
 const ALL_TIMERS: string[] = [
   "BUZZ_OPEN_IDLE",
@@ -49,6 +53,7 @@ const ALL_TIMERS: string[] = [
   "R2_WINDOW",
   "FINAL_WAGER_WINDOW",
   "FINAL_ANSWER_WINDOW",
+  "AUTO_ADVANCE",
 ];
 
 // === public API ============================================================
@@ -87,6 +92,7 @@ export function advanceFromIntroOrReveal(
         lastReveal: undefined,
       },
       clear: ALL_TIMERS,
+      schedule: { name: "AUTO_ADVANCE", delayMs: ROUND_INTRO_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
     };
   }
   // REVEAL → next question, or round-end transition
@@ -107,6 +113,7 @@ export function advanceFromIntroOrReveal(
     return {
       state: { ...state, phase: "SCOREBOARD", currentQuestion: undefined },
       clear: ALL_TIMERS,
+      schedule: { name: "AUTO_ADVANCE", delayMs: SCOREBOARD_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
     };
   }
   // From BUZZ_OPEN with no buzzes, host can force a reveal → no scoring.
@@ -242,6 +249,15 @@ export function handleTimerExpired(
       // Auto-resolve final answers (any non-answers counted as 'no answer' → wrong).
       if (state.phase !== "ANSWER_LOCK" || state.currentRound !== 4) return { state };
       return resolveFinalAnswer(state, rounds);
+    case "AUTO_ADVANCE":
+      // Auto-advance from ROUND_INTRO, REVEAL, or SCOREBOARD.
+      if (state.phase === "ROUND_INTRO" || state.phase === "REVEAL" || state.phase === "SCOREBOARD") {
+        if (state.phase === "SCOREBOARD" && state.currentRound === 3) {
+          return enterFinalWager(state, rounds);
+        }
+        return advanceFromIntroOrReveal(state, rounds);
+      }
+      return { state };
   }
 }
 
@@ -289,6 +305,7 @@ function enterQuestionAndOpen(
     return {
       state: { ...state, phase: "SCOREBOARD", currentQuestion: undefined },
       clear: ALL_TIMERS,
+      schedule: { name: "AUTO_ADVANCE", delayMs: SCOREBOARD_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
     };
   }
 
@@ -455,6 +472,7 @@ function enterReveal(
       buzzedPlayerId: extra?.buzzedPlayerId ?? state.buzzedPlayerId,
     },
     clear: ALL_TIMERS,
+    schedule: { name: "AUTO_ADVANCE", delayMs: REVEAL_AUTO_ADVANCE_MS, event: "AUTO_ADVANCE" },
   };
 }
 
