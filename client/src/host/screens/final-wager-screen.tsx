@@ -38,6 +38,20 @@ export function FinalWagerScreen({ state }: Props) {
         question reveals.
       </motion.p>
 
+      <motion.div
+        initial={{ y: 12, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.7 }}
+        className="mt-3 flex items-center gap-3 text-sm font-display"
+      >
+        <span className="opacity-60">Buzz:</span>
+        <span className="px-2 py-0.5 rounded bg-yellow-400 text-black font-bold">Y 20%</span>
+        <span className="px-2 py-0.5 rounded bg-green-500 text-black font-bold">G 40%</span>
+        <span className="px-2 py-0.5 rounded bg-orange-500 text-black font-bold">O 60%</span>
+        <span className="px-2 py-0.5 rounded bg-blue-500 text-white font-bold">B 80%</span>
+        <span className="px-2 py-0.5 rounded bg-red-600 text-white font-bold">🔴 100%</span>
+      </motion.div>
+
       <motion.p
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -96,7 +110,7 @@ export function FinalWagerScreen({ state }: Props) {
                       transition={{ ease: [0.34, 1.56, 0.64, 1], duration: 0.5 }}
                       className="text-lg font-display text-neon-green text-glow-cyan"
                     >
-                      Locked ✓
+                      Wagered {w} ✓
                     </motion.p>
                   ) : (
                     <motion.p
