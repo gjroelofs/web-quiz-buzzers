@@ -19,9 +19,15 @@ export class WSClient {
   private closedByUser = false;
 
   constructor(url?: string) {
-    this.url =
-      url ??
-      `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
+    if (url) {
+      this.url = url;
+    } else {
+      // In dev mode (Vite on :5173), connect WS directly to the Bun server
+      // on :3000 because Vite's WS proxy is unreliable under Bun on Windows.
+      const host = location.port === "5173" ? `${location.hostname}:3000` : location.host;
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      this.url = `${proto}://${host}/ws`;
+    }
   }
 
   connect(): void {
