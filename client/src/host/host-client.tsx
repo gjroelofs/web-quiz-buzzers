@@ -145,7 +145,7 @@ function BuzzGameInputs() {
       state.phase === "BUZZ_OPEN" &&
       (state.currentRound === 1 || state.currentRound === 3)
     ) {
-      gameSession.send({ type: "BUZZ" });
+      gameSession.send({ type: "BUZZ", payload: { buzzPlayerId: me.id } });
       return;
     }
     // Answer buttons (Y/G/O/B) during ANSWER_LOCK (R1/R3 buzzer's pick),
@@ -161,14 +161,14 @@ function BuzzGameInputs() {
     const isSpeedAnswer =
       state.phase === "BUZZ_OPEN" && state.currentRound === 2;
     if (isFinalAnswer || isBuzzerAnswer || isSpeedAnswer) {
-      gameSession.send({ type: "ANSWER", payload: { choice } });
+      gameSession.send({ type: "ANSWER", payload: { choice, buzzPlayerId: me.id } });
       return;
     }
     // Wager presets in FINAL_WAGER: Y=25%, G=50%, O=75%, B=100%.
     if (state.phase === "FINAL_WAGER") {
       const pct = [0.25, 0.5, 0.75, 1.0][choice] ?? 0;
       const amount = Math.floor(me.score * pct);
-      gameSession.send({ type: "WAGER", payload: { amount } });
+      gameSession.send({ type: "WAGER", payload: { amount, buzzPlayerId: me.id } });
     }
   });
   return null;

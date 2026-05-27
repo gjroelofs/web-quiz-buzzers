@@ -149,15 +149,30 @@ export function handleClientMessage(
       }
       const playerId = ws.data.playerId;
       switch (msg.type) {
-        case "BUZZ":
-          room.handleBuzz(playerId);
+        case "BUZZ": {
+          const targetId =
+            msg.payload?.buzzPlayerId && playerId === room.state.hostId
+              ? msg.payload.buzzPlayerId
+              : playerId;
+          room.handleBuzz(targetId);
           break;
-        case "ANSWER":
-          room.handleAnswer(playerId, msg.payload.choice);
+        }
+        case "ANSWER": {
+          const targetId =
+            msg.payload.buzzPlayerId && playerId === room.state.hostId
+              ? msg.payload.buzzPlayerId
+              : playerId;
+          room.handleAnswer(targetId, msg.payload.choice);
           break;
-        case "WAGER":
-          room.handleWager(playerId, msg.payload.amount);
+        }
+        case "WAGER": {
+          const targetId =
+            msg.payload.buzzPlayerId && playerId === room.state.hostId
+              ? msg.payload.buzzPlayerId
+              : playerId;
+          room.handleWager(targetId, msg.payload.amount);
           break;
+        }
         case "NEXT_QUESTION":
           room.handleNextQuestion(playerId);
           break;

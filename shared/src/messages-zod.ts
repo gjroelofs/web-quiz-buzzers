@@ -33,16 +33,17 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("START_GAME"),
     payload: z.object({ packId: z.string().min(1).max(80) }),
   }),
-  z.object({ type: z.literal("BUZZ"), payload: emptyPayload }),
+  z.object({ type: z.literal("BUZZ"), payload: z.object({ buzzPlayerId: z.string().min(1).max(64).optional() }).optional() }),
   z.object({
     type: z.literal("ANSWER"),
     payload: z.object({
       choice: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+      buzzPlayerId: z.string().min(1).max(64).optional(),
     }),
   }),
   z.object({
     type: z.literal("WAGER"),
-    payload: z.object({ amount: z.number().int().min(0) }),
+    payload: z.object({ amount: z.number().int().min(0), buzzPlayerId: z.string().min(1).max(64).optional() }),
   }),
   z.object({ type: z.literal("NEXT_QUESTION"), payload: emptyPayload }),
   z.object({ type: z.literal("RESET_GAME"), payload: emptyPayload }),

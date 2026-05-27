@@ -121,6 +121,7 @@ export function advanceFromIntroOrReveal(
 export function handleBuzz(state: GameState, playerId: string): EngineResult {
   if (state.phase !== "BUZZ_OPEN") return { state };
   if (state.currentRound === 2 || state.currentRound === 4) return { state };
+  if (!state.players.some((p) => p.id === playerId)) return { state };
   if (state.lockedOutPlayerIds.includes(playerId)) return { state };
   if (state.buzzedPlayerId) return { state };
   // First valid buzz wins. Lock the question to this player; start answer timer.
