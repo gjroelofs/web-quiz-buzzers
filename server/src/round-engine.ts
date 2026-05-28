@@ -504,9 +504,14 @@ export function enterFinalWager(
   if (!q) {
     return { state: { ...state, phase: "WINNER" }, clear: ALL_TIMERS };
   }
+  // Grant 50 bonus points to players below 100 so everyone has something to wager.
+  const players = state.players.map((p) =>
+    p.score < 100 ? { ...p, score: p.score + 50 } : p,
+  );
   return {
     state: {
       ...state,
+      players,
       phase: "FINAL_WAGER",
       currentRound: 4,
       questionIndex: index,
