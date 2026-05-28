@@ -129,7 +129,7 @@ export function LobbyScreen({ state, serverInfo }: Props) {
     ? `${location.protocol}//${lanIp}${portSuffix}/play?room=${state.roomCode}`
     : `${location.origin}/play?room=${state.roomCode}`;
 
-  const canStart = state.players.length >= 1 && selectedPack !== null;
+  const canStart = state.players.length >= 1 && selectedPack !== null && namingSlots.size === 0;
 
   return (
     <div className="min-h-screen text-cyan-100 p-6 font-body relative overflow-hidden">
