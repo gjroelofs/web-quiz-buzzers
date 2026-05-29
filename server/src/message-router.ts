@@ -114,20 +114,27 @@ export function handleClientMessage(
     case "START_GAME": {
       if (!ws.data.playerId || !ws.data.roomCode) {
         sendError(ws, "NOT_IN_ROOM", "join a room first");
+        console.log("[router] START_GAME rejected: NOT_IN_ROOM, ws.data =", ws.data);
         return;
       }
       const room = rooms.get(ws.data.roomCode);
       if (!room) {
         sendError(ws, "ROOM_NOT_FOUND", "your room no longer exists");
+        console.log("[router] START_GAME rejected: ROOM_NOT_FOUND, roomCode =", ws.data.roomCode);
         return;
       }
       const err = room.startGame(msg.payload.packId, ws.data.playerId);
       if (err === "PACK_NOT_FOUND") {
         sendError(ws, "PACK_NOT_FOUND", `pack '${msg.payload.packId}' not loaded`);
+        console.log("[router] START_GAME rejected: PACK_NOT_FOUND, packId =", msg.payload.packId);
       } else if (err === "NOT_HOST") {
         sendError(ws, "NOT_HOST", "only the host can start the game");
+        console.log("[router] START_GAME rejected: NOT_HOST, ws.data.playerId =", ws.data.playerId, "hostId =", room.state.hostId);
       } else if (err === "BAD_PHASE") {
         sendError(ws, "BAD_PHASE", "game already started");
+        console.log("[router] START_GAME rejected: BAD_PHASE, phase =", room.state.phase);
+      } else {
+        console.log("[router] START_GAME accepted, playerId =", ws.data.playerId);
       }
       return;
     }
@@ -141,14 +148,17 @@ export function handleClientMessage(
     case "TOGGLE_PAUSE": {
       if (!ws.data.playerId || !ws.data.roomCode) {
         sendError(ws, "NOT_IN_ROOM", "join a room first");
+        console.log(`[router] ${msg.type} rejected: NOT_IN_ROOM, ws.data =`, ws.data);
         return;
       }
       const room = rooms.get(ws.data.roomCode);
       if (!room) {
         sendError(ws, "ROOM_NOT_FOUND", "your room no longer exists");
+        console.log(`[router] ${msg.type} rejected: ROOM_NOT_FOUND`);
         return;
       }
       const playerId = ws.data.playerId;
+      console.log(`[router] ${msg.type} from playerId=${playerId}, hostId=${room.state.hostId}, phase=${room.state.phase}`);
       switch (msg.type) {
         case "BUZZ": {
           const targetId =

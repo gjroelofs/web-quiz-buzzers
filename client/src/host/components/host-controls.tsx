@@ -81,7 +81,7 @@ export function HostControls({ state }: Props) {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="fixed bottom-4 right-4 z-50 flex gap-2">
+      <div className="fixed bottom-4 right-4 z-[200] flex gap-2">
         {showEnd && (
           <MagneticButton
             onClick={() => setConfirmEnd(true)}

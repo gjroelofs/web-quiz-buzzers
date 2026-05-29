@@ -91,7 +91,9 @@ async function handleHttp(url: URL): Promise<Response> {
 function logBootInfo(port: number) {
   const lanIps = getLanIps();
   console.log("");
-  console.log("  Buzz Quiz server running");
+  console.log("  ╔══════════════════════════════════════╗");
+  console.log("  ║         BUZZ QUIZ - Running!         ║");
+  console.log("  ╚══════════════════════════════════════╝");
   console.log("");
   console.log(`    Local:    http://localhost:${port}`);
   for (const ip of lanIps) {
@@ -101,6 +103,16 @@ function logBootInfo(port: number) {
   if (!IS_PROD) {
     console.log("    Dev: open Vite at http://localhost:5173 (HTTP) — WS proxied to this server");
     console.log("");
+  }
+  if (IS_PROD) {
+    console.log("  Open the URL above in Chrome/Edge on this machine.");
+    console.log("  Phone players scan the QR code shown in the lobby.");
+    console.log("");
+    console.log("  Press Ctrl+C to stop the server.");
+    console.log("");
+    // Auto-open browser
+    const url = `http://localhost:${port}`;
+    Bun.spawn(["cmd", "/c", "start", url], { stdout: "ignore", stderr: "ignore" });
   }
 }
 

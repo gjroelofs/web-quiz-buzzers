@@ -150,8 +150,14 @@ export class Room {
   // Host action: NEXT_QUESTION (advances ROUND_INTRO/QUESTION_REVEAL/REVEAL/SCOREBOARD/BUZZ_OPEN).
   // Also auto-promotes round 3 → round 4 (final) when SCOREBOARD advances.
   handleNextQuestion(playerId: string): void {
-    if (playerId !== this.state.hostId) return;
-    if (!this.roundQuestions) return;
+    if (playerId !== this.state.hostId) {
+      console.log(`[room] handleNextQuestion rejected: playerId=${playerId} !== hostId=${this.state.hostId}`);
+      return;
+    }
+    if (!this.roundQuestions) {
+      console.log("[room] handleNextQuestion rejected: no roundQuestions");
+      return;
+    }
     // Special case: SCOREBOARD after round 3 → enter FINAL_WAGER directly (if final has questions).
     if (this.state.phase === "SCOREBOARD" && this.state.currentRound === 3) {
       if (this.roundQuestions.final.length > 0) {
