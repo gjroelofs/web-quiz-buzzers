@@ -63,6 +63,13 @@ try {
 logBootInfo(server.port ?? PORT);
 
 async function handleHttp(url: URL): Promise<Response> {
+  // Serve static media/audio from public/ in both dev and prod.
+  if (url.pathname.startsWith("/media/") || url.pathname.startsWith("/audio/")) {
+    if (url.pathname.includes("..")) return new Response("not found", { status: 404 });
+    const file = Bun.file(`public${url.pathname}`);
+    if (await file.exists()) return new Response(file);
+    return new Response("not found", { status: 404 });
+  }
   if (!IS_PROD) {
     return new Response(
       "Dev mode: open http://localhost:5173 (Vite serves the client)",
