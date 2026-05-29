@@ -73,6 +73,7 @@ export interface GameState {
   wagers?: Record<string, number>;
   lastReveal?: RevealResult;
   wrongAnswers?: number[];
+  answerMap?: number[]; // shuffled index → original index; server-only, stripped before broadcast
   paused?: boolean;
   autoAdvanceAt?: number;
   startedAt?: number;

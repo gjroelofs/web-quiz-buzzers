@@ -17,7 +17,7 @@ const HIDDEN_QUESTION: QuestionPublic = {
 
 export function projectStateForBroadcast(state: GameState): GameState {
   // Wagers are visible to all players (shared screen party game).
-  let out: GameState = state;
+  let out: GameState = { ...state, answerMap: undefined };
 
   // Strip per-player speed-round picks (and timestamps) until reveal — keep
   // keys for "X/N answered" counter UI on the host screen.
