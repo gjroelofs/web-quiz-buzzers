@@ -160,6 +160,7 @@ function BuzzGameInputs() {
     // BUZZ_OPEN (R2 speed), or final ANSWER_LOCK.
     const choice = buttonToChoice(p.buttonIndex);
     if (choice === undefined) return;
+    if (state.currentQuestion && choice >= state.currentQuestion.answers.length) return;
     const isFinalAnswer =
       state.phase === "ANSWER_LOCK" && state.currentRound === 4;
     const isBuzzerAnswer =

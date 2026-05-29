@@ -157,6 +157,10 @@ export function handleAnswer(
   playerId: string,
   choice: 0 | 1 | 2 | 3,
 ): EngineResult {
+  // Reject choices beyond the current question's answer count.
+  if (state.currentQuestion && choice >= state.currentQuestion.answers.length) {
+    return { state };
+  }
   // R1/R3 ANSWER_LOCK: only the buzzer can answer.
   if (state.phase === "ANSWER_LOCK" && (state.currentRound === 1 || state.currentRound === 3)) {
     if (state.buzzedPlayerId !== playerId) return { state };

@@ -22,16 +22,14 @@ export const MediaSchema = z
 
 export const QuestionSchema = z.object({
   text: z.string().min(1).max(500),
-  answers: z.tuple([
-    z.string().min(1).max(120),
-    z.string().min(1).max(120),
-    z.string().min(1).max(120),
-    z.string().min(1).max(120),
-  ]),
-  correct: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  answers: z.array(z.string().min(1).max(120)).min(2).max(4),
+  correct: z.number().int().min(0).max(3),
   category: z.string().min(1).max(60),
   difficulty: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   media: MediaSchema.optional().default(null),
+}).refine((q) => q.correct < q.answers.length, {
+  message: "correct index must be within answers array bounds",
+  path: ["correct"],
 });
 
 export const PackSchema = z.object({

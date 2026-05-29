@@ -23,6 +23,8 @@ export function AnswerScreen({ state }: Props) {
     setSubmitted(null);
   }, [state.phase, state.questionIndex]);
 
+  const answerCount = q?.answers.length ?? 4;
+
   const onTap = (choice: 0 | 1 | 2 | 3) => {
     if (submitted !== null) return;
     setSubmitted(choice);
@@ -35,8 +37,8 @@ export function AnswerScreen({ state }: Props) {
       <header className="px-4 py-2 text-xs uppercase tracking-[0.4em] text-neon-cyan font-display">
         Pick an answer
       </header>
-      <div className="grid grid-cols-2 grid-rows-2 gap-1 flex-1">
-        {BUTTONS.map(({ choice, bg, text }, idx) => {
+      <div className={`grid gap-1 flex-1 ${answerCount <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2"}`}>
+        {BUTTONS.slice(0, answerCount).map(({ choice, bg, text }, idx) => {
           const label = q?.answers[choice] ?? letterFor(choice);
           const inactive = submitted !== null && submitted !== choice;
           const isMe = submitted === choice;
