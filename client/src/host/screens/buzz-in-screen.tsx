@@ -127,7 +127,7 @@ export function BuzzInScreen({ state }: Props) {
 
       {state.buzzWindowEndsAt && (
         <div className="mt-4 px-12">
-          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={totalMs} />
+          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={totalMs} paused={state.paused} />
         </div>
       )}
     </div>

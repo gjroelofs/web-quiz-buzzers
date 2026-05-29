@@ -3,19 +3,24 @@ import { useEffect, useState } from "react";
 interface Props {
   endsAt: number;
   totalMs: number;
+  paused?: boolean;
   className?: string;
 }
 
 // Server-authoritative countdown. We compute remaining locally but never
 // trust the client clock for game decisions — the bar is purely visual.
-export function CountdownBar({ endsAt, totalMs, className = "" }: Props) {
-  const [now, setNow] = useState(Date.now());
+export function CountdownBar({ endsAt, totalMs, paused, className = "" }: Props) {
+  const [ratio, setRatio] = useState(1);
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 80);
+    if (paused) return;
+    const tick = () => {
+      const remaining = Math.max(0, endsAt - Date.now());
+      setRatio(Math.max(0, Math.min(1, remaining / totalMs)));
+    };
+    tick();
+    const t = setInterval(tick, 80);
     return () => clearInterval(t);
-  }, []);
-  const remaining = Math.max(0, endsAt - now);
-  const ratio = Math.max(0, Math.min(1, remaining / totalMs));
+  }, [endsAt, totalMs, paused]);
   const danger = ratio < 0.25;
   return (
     <div

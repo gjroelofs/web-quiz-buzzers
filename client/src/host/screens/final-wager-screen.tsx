@@ -67,7 +67,7 @@ export function FinalWagerScreen({ state }: Props) {
 
       {state.buzzWindowEndsAt && (
         <div className="mt-6 w-80">
-          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={FINAL_WAGER_WINDOW_MS} />
+          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={FINAL_WAGER_WINDOW_MS} paused={state.paused} />
         </div>
       )}
 
