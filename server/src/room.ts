@@ -152,9 +152,14 @@ export class Room {
   handleNextQuestion(playerId: string): void {
     if (playerId !== this.state.hostId) return;
     if (!this.roundQuestions) return;
-    // Special case: SCOREBOARD after round 3 → enter FINAL_WAGER directly.
+    // Special case: SCOREBOARD after round 3 → enter FINAL_WAGER directly (if final has questions).
     if (this.state.phase === "SCOREBOARD" && this.state.currentRound === 3) {
-      this.applyEngine(enterFinalWager(this.state, this.roundQuestions));
+      if (this.roundQuestions.final.length > 0) {
+        this.applyEngine(enterFinalWager(this.state, this.roundQuestions));
+        return;
+      }
+      // No final questions — go to WINNER.
+      this.applyEngine({ state: { ...this.state, phase: "WINNER" }, clear: ["AUTO_ADVANCE"] });
       return;
     }
     this.applyEngine(advanceFromIntroOrReveal(this.state, this.roundQuestions));

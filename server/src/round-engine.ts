@@ -72,10 +72,17 @@ export function advanceFromIntroOrReveal(
   }
   // SCOREBOARD → next round intro
   if (state.phase === "SCOREBOARD") {
-    const nextRound = (state.currentRound + 1) as RoundIndex;
+    let nextRound = (state.currentRound + 1) as RoundIndex;
+    // Skip rounds with no questions.
+    while (nextRound <= 4 && listForRound(rounds, nextRound).length === 0) {
+      nextRound = (nextRound + 1) as RoundIndex;
+    }
     if (nextRound > 4) {
-      // Game over (shouldn't normally hit — final reveal goes straight to WINNER).
       return { state: { ...state, phase: "WINNER" }, clear: ALL_TIMERS };
+    }
+    // Round 4 (final) enters via FINAL_WAGER, not ROUND_INTRO.
+    if (nextRound === 4) {
+      return enterFinalWager({ ...state, currentRound: 4 }, rounds);
     }
     return {
       state: {
@@ -249,7 +256,7 @@ export function handleTimerExpired(
       // Buzzer didn't answer in time → counts as wrong (can be stolen).
       if (state.phase !== "ANSWER_LOCK") return { state };
       if (state.currentRound !== 1 && state.currentRound !== 3) return { state };
-      return openSteal(state);
+      return openSteal(state, rounds);
     case "STEAL_ANSWER_WINDOW":
       // Stealer didn't answer in time → reveal, no further changes.
       if (state.phase !== "ANSWER_LOCK") return { state };
@@ -396,15 +403,28 @@ function resolveBuzzAnswer(
   }
   // Original buzzer wrong: open steal window for everyone else.
   const wrongAnswers = [...(state.wrongAnswers ?? []), choice];
-  return openSteal({ ...state, wrongAnswers });
+  return openSteal({ ...state, wrongAnswers }, rounds);
 }
 
-function openSteal(state: GameState): EngineResult {
+function openSteal(state: GameState, rounds: RoundQuestions): EngineResult {
   // Lock out the player who just buzzed (or who was holding the lock on timeout).
   const originalId = state.buzzedPlayerId ?? state.lockedOutPlayerIds[0];
   const lockedOut = originalId
     ? Array.from(new Set([...state.lockedOutPlayerIds, originalId]))
     : state.lockedOutPlayerIds;
+
+  // If all players are now locked out, no one can steal — go to reveal.
+  const allLockedOut = state.players.every((p) => lockedOut.includes(p.id));
+  if (allLockedOut) {
+    const deltas: Record<string, number> = {};
+    for (const p of state.players) deltas[p.id] = 0;
+    return enterReveal(state, rounds, getCurrentQuestion(state, rounds)?.correct ?? 0, deltas, {
+      buzzedPlayerId: originalId,
+      buzzedAnswer: undefined,
+      buzzedCorrect: false,
+    });
+  }
+
   return {
     state: {
       ...state,
@@ -552,7 +572,7 @@ export function enterFinalWager(
 function autoCompleteFinalWagers(state: GameState): EngineResult {
   const wagers = { ...(state.wagers ?? {}) };
   for (const p of state.players) {
-    if (wagers[p.id] == null) wagers[p.id] = 0;
+    if (wagers[p.id] == null) wagers[p.id] = Math.floor(p.score * 0.2);
   }
   return enterFinalQuestion({ ...state, wagers });
 }

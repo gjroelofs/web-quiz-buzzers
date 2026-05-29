@@ -233,12 +233,19 @@ function BuzzLedController() {
         setOnly(state.buzzedPlayerId);
         return;
       }
-      // Pulse all
+      // Pulse eligible players (not locked out)
+      const setEligible = (on: boolean) => {
+        for (const p of buzzPlayers) {
+          const lockedOut = state.lockedOutPlayerIds.includes(p.id);
+          const d = dongles.find((dg) => dg.dongleId === p.buzzSlot!.dongleId);
+          d?.setLed(p.buzzSlot!.controllerIndex as 0 | 1 | 2 | 3, on && !lockedOut).catch(() => {});
+        }
+      };
       let on = true;
-      setAll(true);
+      setEligible(true);
       const interval = setInterval(() => {
         on = !on;
-        setAll(on);
+        setEligible(on);
       }, 400);
       return () => { clearInterval(interval); setAll(false); };
     }
@@ -262,9 +269,19 @@ function BuzzLedController() {
       return () => { setAll(false); };
     }
 
+    // FINAL_WAGER: on for players who haven't wagered yet
+    if (state.phase === "FINAL_WAGER") {
+      for (const p of buzzPlayers) {
+        const wagered = state.wagers?.[p.id] != null;
+        const d = dongles.find((dg) => dg.dongleId === p.buzzSlot!.dongleId);
+        d?.setLed(p.buzzSlot!.controllerIndex as 0 | 1 | 2 | 3, !wagered).catch(() => {});
+      }
+      return () => { setAll(false); };
+    }
+
     // Everything else: off
     setAll(false);
-  }, [state?.phase, state?.buzzedPlayerId, state?.currentRound]);
+  }, [state?.phase, state?.buzzedPlayerId, state?.currentRound, state?.wagers, state?.lockedOutPlayerIds]);
 
   return null;
 }
