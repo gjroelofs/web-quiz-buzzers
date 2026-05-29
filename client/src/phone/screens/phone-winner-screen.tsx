@@ -95,6 +95,26 @@ export function PhoneWinnerScreen({ state }: Props) {
           );
         })}
       </div>
+      {/* Full scores */}
+      <ul className={`mt-6 w-full grid gap-1.5 grid-flow-col ${
+        ranked.length > 8 ? "grid-rows-4 grid-cols-3" : ranked.length > 4 ? "grid-rows-4 grid-cols-2" : "grid-rows-[repeat(auto-fill,1fr)]"
+      }`}>
+        {ranked.map((p, idx) => (
+          <motion.li
+            key={p.id}
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 1.5 + idx * 0.1 }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded border text-sm ${
+              idx === 0 ? "border-neon-gold bg-yellow-950/40" : "border-cyan-900/60 bg-cyan-950/40"
+            }`}
+          >
+            <span className={`w-5 text-right font-display ${idx === 0 ? "text-neon-gold" : ""}`}>{idx + 1}</span>
+            <span className={`font-display tracking-wider flex-1 truncate ${idx === 0 ? "text-neon-gold" : ""}`}>{p.name}</span>
+            <span className={`font-display tabular-nums ${idx === 0 ? "text-neon-gold" : ""}`}>{p.score}</span>
+          </motion.li>
+        ))}
+      </ul>
     </div>
   );
 }
