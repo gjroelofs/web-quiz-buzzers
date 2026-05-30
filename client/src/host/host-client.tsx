@@ -119,6 +119,10 @@ export function HostClient() {
       <ScreenRouter state={state} serverInfo={serverInfo} />
       <HostControls state={state} />
       <BuzzGameInputs />
+      <BuzzLedController />
+      <div className="fixed top-3 right-3 z-50 text-xs font-display tracking-widest opacity-60 text-cyan-300">
+        {state.roomCode}
+      </div>
     </>
   );
 }
@@ -159,6 +163,7 @@ function BuzzGameInputs() {
     // BUZZ_OPEN (R2 speed), or final ANSWER_LOCK.
     const choice = buttonToChoice(p.buttonIndex);
     if (choice === undefined) return;
+    if (state.currentQuestion && choice >= state.currentQuestion.answers.length) return;
     const isFinalAnswer =
       state.phase === "ANSWER_LOCK" && state.currentRound === 4;
     const isBuzzerAnswer =
@@ -181,7 +186,7 @@ function BuzzGameInputs() {
     // Wager presets in FINAL_WAGER: Y=20%, G=40%, O=60%, B=80%.
     if (state.phase === "FINAL_WAGER") {
       if (state.wagers?.[me.id] != null) return; // already wagered
-      const pct = [0.2, 0.4, 0.6, 0.8][choice] ?? 0;
+      const pct = { 1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8 }[p.buttonIndex] ?? 0;
       const amount = Math.floor(me.score * pct);
       gameSession.send({ type: "WAGER", payload: { amount, buzzPlayerId: me.id } });
     }
@@ -194,4 +199,89 @@ import { getGameState } from "@client/state/game-store";
 function useGameStateSnapshot() {
   // Always reads the latest store value at call time.
   return getGameState();
+}
+
+// Controls buzz controller LEDs based on game phase.
+function BuzzLedController() {
+  const state = useGameState();
+
+  useEffect(() => {
+    if (!state || state.phase === "LOBBY") return;
+
+    const dongles = buzzManager.dongles;
+    if (dongles.length === 0) return;
+
+    const buzzPlayers = state.players.filter((p) => p.buzzSlot);
+
+    const setAll = (on: boolean) => {
+      for (const p of buzzPlayers) {
+        const d = dongles.find((dg) => dg.dongleId === p.buzzSlot!.dongleId);
+        d?.setLed(p.buzzSlot!.controllerIndex as 0 | 1 | 2 | 3, on).catch(() => {});
+      }
+    };
+
+    const setOnly = (playerId: string) => {
+      for (const p of buzzPlayers) {
+        const d = dongles.find((dg) => dg.dongleId === p.buzzSlot!.dongleId);
+        d?.setLed(p.buzzSlot!.controllerIndex as 0 | 1 | 2 | 3, p.id === playerId).catch(() => {});
+      }
+    };
+
+    // BUZZ_OPEN R1/R3: pulse if no one buzzed yet, solid on buzzed player only
+    if (state.phase === "BUZZ_OPEN" && (state.currentRound === 1 || state.currentRound === 3)) {
+      if (state.buzzedPlayerId) {
+        setOnly(state.buzzedPlayerId);
+        return;
+      }
+      // Pulse eligible players (not locked out)
+      const setEligible = (on: boolean) => {
+        for (const p of buzzPlayers) {
+          const lockedOut = state.lockedOutPlayerIds.includes(p.id);
+          const d = dongles.find((dg) => dg.dongleId === p.buzzSlot!.dongleId);
+          d?.setLed(p.buzzSlot!.controllerIndex as 0 | 1 | 2 | 3, on && !lockedOut).catch(() => {});
+        }
+      };
+      let on = true;
+      setEligible(true);
+      const interval = setInterval(() => {
+        on = !on;
+        setEligible(on);
+      }, 400);
+      return () => { clearInterval(interval); setAll(false); };
+    }
+
+    // BUZZ_OPEN R2 (speed): all on
+    if (state.phase === "BUZZ_OPEN" && state.currentRound === 2) {
+      setAll(true);
+      return () => { setAll(false); };
+    }
+
+    // ANSWER_LOCK R1/R3: only buzzed player on
+    if (state.phase === "ANSWER_LOCK" && (state.currentRound === 1 || state.currentRound === 3)) {
+      if (state.buzzedPlayerId) setOnly(state.buzzedPlayerId);
+      else setAll(false);
+      return () => { setAll(false); };
+    }
+
+    // ANSWER_LOCK R4 (final): all on
+    if (state.phase === "ANSWER_LOCK" && state.currentRound === 4) {
+      setAll(true);
+      return () => { setAll(false); };
+    }
+
+    // FINAL_WAGER: on for players who haven't wagered yet
+    if (state.phase === "FINAL_WAGER") {
+      for (const p of buzzPlayers) {
+        const wagered = state.wagers?.[p.id] != null;
+        const d = dongles.find((dg) => dg.dongleId === p.buzzSlot!.dongleId);
+        d?.setLed(p.buzzSlot!.controllerIndex as 0 | 1 | 2 | 3, !wagered).catch(() => {});
+      }
+      return () => { setAll(false); };
+    }
+
+    // Everything else: off
+    setAll(false);
+  }, [state?.phase, state?.buzzedPlayerId, state?.currentRound, state?.wagers, state?.lockedOutPlayerIds]);
+
+  return null;
 }

@@ -1,0 +1,102 @@
+{
+  "name": "Variable Answers Test",
+  "description": "Test pack with 2, 3, and 4 answer questions",
+  "questions": [
+    {
+      "text": "Is water wet?",
+      "answers": ["Yes", "No"],
+      "correct": 0,
+      "category": "Science",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "What color is the sky on a clear day?",
+      "answers": ["Blue", "Green", "Red"],
+      "correct": 0,
+      "category": "Nature",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "Which planet is closest to the Sun?",
+      "answers": ["Venus", "Mercury", "Earth", "Mars"],
+      "correct": 1,
+      "category": "Space",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "Do penguins fly?",
+      "answers": ["Yes", "No"],
+      "correct": 1,
+      "category": "Animals",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "What is the primary language spoken in Brazil?",
+      "answers": ["Spanish", "Portuguese", "French"],
+      "correct": 1,
+      "category": "Geography",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "How many sides does a triangle have?",
+      "answers": ["2", "3", "4"],
+      "correct": 1,
+      "category": "Math",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "Which of these is a mammal?",
+      "answers": ["Shark", "Eagle", "Dolphin", "Lizard"],
+      "correct": 2,
+      "category": "Animals",
+      "difficulty": 2,
+      "media": null
+    },
+    {
+      "text": "Is the Moon a planet?",
+      "answers": ["Yes", "No"],
+      "correct": 1,
+      "category": "Space",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "What is H2O commonly known as?",
+      "answers": ["Oil", "Water", "Milk"],
+      "correct": 1,
+      "category": "Science",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "Which continent is Japan on?",
+      "answers": ["Europe", "Africa", "Asia", "South America"],
+      "correct": 2,
+      "category": "Geography",
+      "difficulty": 1,
+      "media": null
+    },
+    {
+      "text": "Does sound travel faster in water or air?",
+      "answers": ["Water", "Air"],
+      "correct": 0,
+      "category": "Science",
+      "difficulty": 2,
+      "media": null
+    },
+    {
+      "text": "What is the capital of France?",
+      "answers": ["London", "Berlin", "Paris", "Madrid"],
+      "correct": 2,
+      "category": "Geography",
+      "difficulty": 1,
+      "media": null
+    }
+  ]
+}

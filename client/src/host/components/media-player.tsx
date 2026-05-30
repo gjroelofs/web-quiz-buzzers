@@ -30,7 +30,7 @@ export function MediaPlayer({ media, packId }: Props) {
       <img
         src={url}
         alt=""
-        className="max-h-72 max-w-full mx-auto rounded shadow-lg shadow-pink-500/30"
+        className="max-h-72 max-w-full mx-auto rounded"
         onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
       />
     );

@@ -1,7 +1,6 @@
 import type { Pack, Question, RoundQuestions } from "@shared/pack-types";
 
 // Pack assignment knobs. Adjust here, not in callers.
-const QUESTIONS_PER_ROUND = 4;
 const FINAL_POOL_SIZE = 3;
 
 export class PackRegistry {
@@ -28,27 +27,23 @@ export class PackRegistry {
     }));
   }
 
-  // Slices a pack into round buckets. R3 prefers media-bearing questions;
-  // remaining questions feed R1, R2, then the wager pool.
-  // No shuffling: keeps replays deterministic within a session.
+  // Slices a pack into round buckets. The last 3 non-media questions are
+  // always reserved for the final wager round. All media questions go to R3.
+  // Remaining non-media questions are split evenly between R1 and R2.
   assignToRounds(id: string): RoundQuestions | null {
     const pack = this.packs.get(id);
     if (!pack) return null;
 
-    const all: Question[] = [...pack.questions];
-    const withMedia = all.filter((q) => q.media != null);
-    const withoutMedia = all.filter((q) => q.media == null);
+    const withMedia = pack.questions.filter((q) => q.media != null);
+    const withoutMedia = pack.questions.filter((q) => q.media == null);
 
-    const r3 = withMedia.slice(0, QUESTIONS_PER_ROUND);
-    const remainingMedia = withMedia.slice(QUESTIONS_PER_ROUND);
-    const remaining = [...withoutMedia, ...remainingMedia];
+    const final = withoutMedia.slice(-FINAL_POOL_SIZE);
+    const nonFinal = withoutMedia.slice(0, -FINAL_POOL_SIZE || undefined);
 
-    const r1 = remaining.slice(0, QUESTIONS_PER_ROUND);
-    const r2 = remaining.slice(QUESTIONS_PER_ROUND, QUESTIONS_PER_ROUND * 2);
-    const final = remaining.slice(
-      QUESTIONS_PER_ROUND * 2,
-      QUESTIONS_PER_ROUND * 2 + FINAL_POOL_SIZE,
-    );
+    const r3 = withMedia;
+    const half = Math.ceil(nonFinal.length / 2);
+    const r1 = nonFinal.slice(0, half);
+    const r2 = nonFinal.slice(half);
 
     return { r1, r2, r3, final };
   }

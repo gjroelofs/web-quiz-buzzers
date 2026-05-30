@@ -28,7 +28,7 @@ export function JoinScreen({ initialRoomCode, errorMessage }: Props) {
   };
 
   return (
-    <div className="phone-root relative flex flex-col items-stretch justify-center px-6 py-8 bg-black text-cyan-200 overflow-hidden">
+    <div className="phone-root relative flex flex-col items-stretch justify-center px-6 py-8 bg-black text-cyan-200 overflow-y-auto">
       <AnimatedBg variant="grid" />
 
       <motion.h1
@@ -37,7 +37,7 @@ export function JoinScreen({ initialRoomCode, errorMessage }: Props) {
         transition={{ duration: 0.7, ease: [0.16, 1.4, 0.3, 1] }}
         className="text-7xl font-display text-center tracking-widest text-neon-pink animate-neon-flicker mb-2"
       >
-        <SplitText text="BUZZ" stagger={0.08} duration={0.7} />
+        <SplitText text="BUZZ" stagger={0.08} duration={0.7} animKey="buzz-title" />
       </motion.h1>
       <motion.p
         initial={{ opacity: 0, y: 8 }}
@@ -82,7 +82,7 @@ export function JoinScreen({ initialRoomCode, errorMessage }: Props) {
           className="w-full bg-black border-2 border-neon-cyan/60 rounded text-2xl py-3 px-3 mt-1 focus:border-neon-pink focus:outline-none transition-colors"
           placeholder="Player 1"
           value={name}
-          maxLength={40}
+          maxLength={12}
           disabled={submitted}
           onChange={(e) => setName(e.target.value)}
         />

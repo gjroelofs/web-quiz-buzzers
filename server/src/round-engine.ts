@@ -72,10 +72,17 @@ export function advanceFromIntroOrReveal(
   }
   // SCOREBOARD → next round intro
   if (state.phase === "SCOREBOARD") {
-    const nextRound = (state.currentRound + 1) as RoundIndex;
+    let nextRound = (state.currentRound + 1) as RoundIndex;
+    // Skip rounds with no questions.
+    while (nextRound <= 4 && listForRound(rounds, nextRound).length === 0) {
+      nextRound = (nextRound + 1) as RoundIndex;
+    }
     if (nextRound > 4) {
-      // Game over (shouldn't normally hit — final reveal goes straight to WINNER).
       return { state: { ...state, phase: "WINNER" }, clear: ALL_TIMERS };
+    }
+    // Round 4 (final) enters via FINAL_WAGER, not ROUND_INTRO.
+    if (nextRound === 4) {
+      return enterFinalWager({ ...state, currentRound: 4 }, rounds);
     }
     return {
       state: {
@@ -120,6 +127,19 @@ export function advanceFromIntroOrReveal(
   if (state.phase === "BUZZ_OPEN") {
     return enterReveal(state, rounds, null, null);
   }
+  // From ANSWER_LOCK, host can skip → reveal with no scoring.
+  if (state.phase === "ANSWER_LOCK") {
+    return enterReveal(state, rounds, null, null);
+  }
+  // From FINAL_WAGER, host can skip → open the question for answering immediately.
+  if (state.phase === "FINAL_WAGER") {
+    const wagers = { ...(state.wagers ?? {}) };
+    // Give everyone who hasn't wagered a 0 wager.
+    for (const p of state.players) {
+      if (wagers[p.id] == null) wagers[p.id] = 0;
+    }
+    return enterFinalQuestion({ ...state, wagers });
+  }
   return { state };
 }
 
@@ -157,6 +177,10 @@ export function handleAnswer(
   playerId: string,
   choice: 0 | 1 | 2 | 3,
 ): EngineResult {
+  // Reject choices beyond the current question's answer count.
+  if (state.currentQuestion && choice >= state.currentQuestion.answers.length) {
+    return { state };
+  }
   // R1/R3 ANSWER_LOCK: only the buzzer can answer.
   if (state.phase === "ANSWER_LOCK" && (state.currentRound === 1 || state.currentRound === 3)) {
     if (state.buzzedPlayerId !== playerId) return { state };
@@ -232,7 +256,7 @@ export function handleTimerExpired(
       // Buzzer didn't answer in time → counts as wrong (can be stolen).
       if (state.phase !== "ANSWER_LOCK") return { state };
       if (state.currentRound !== 1 && state.currentRound !== 3) return { state };
-      return openSteal(state);
+      return openSteal(state, rounds);
     case "STEAL_ANSWER_WINDOW":
       // Stealer didn't answer in time → reveal, no further changes.
       if (state.phase !== "ANSWER_LOCK") return { state };
@@ -270,6 +294,13 @@ function listForRound(rounds: RoundQuestions, round: RoundIndex): Question[] {
   return rounds.final;
 }
 
+// Returns the display index of the correct answer given the shuffle map.
+function shuffledCorrect(state: GameState, originalCorrect: number): number {
+  if (!state.answerMap) return originalCorrect;
+  const idx = state.answerMap.indexOf(originalCorrect);
+  return idx >= 0 ? idx : originalCorrect;
+}
+
 function getCurrentQuestion(
   state: GameState,
   rounds: RoundQuestions,
@@ -278,12 +309,21 @@ function getCurrentQuestion(
   return list[state.questionIndex] ?? null;
 }
 
-function toPublic(q: Question): QuestionPublic {
+function toPublic(q: Question): { pub: QuestionPublic; answerMap: number[] } {
+  // Shuffle answer order so correct isn't always index 0.
+  const indices = q.answers.map((_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
   return {
-    text: q.text,
-    answers: q.answers,
-    category: q.category,
-    media: q.media ?? null,
+    pub: {
+      text: q.text,
+      answers: indices.map((i) => q.answers[i]),
+      category: q.category,
+      media: q.media ?? null,
+    },
+    answerMap: indices, // answerMap[displayIndex] = originalIndex
   };
 }
 
@@ -314,12 +354,15 @@ function enterQuestionAndOpen(
   const timerName = isSpeed ? "R2_WINDOW" : "BUZZ_OPEN_IDLE";
   const timerEvent = timerName;
 
+  const { pub, answerMap } = toPublic(q);
+
   return {
     state: {
       ...state,
       phase: "BUZZ_OPEN",
       questionIndex,
-      currentQuestion: toPublic(q),
+      currentQuestion: pub,
+      answerMap,
       buzzedPlayerId: undefined,
       lockedOutPlayerIds: [],
       speedRoundAnswers: undefined,
@@ -342,7 +385,7 @@ function resolveBuzzAnswer(
   if (!q) return { state };
   const params = paramsForRound(state.currentRound);
   if (!params) return { state };
-  const correct = choice === q.correct;
+  const correct = (state.answerMap?.[choice] ?? choice) === q.correct;
   const isSteal = state.lockedOutPlayerIds.length > 0;
 
   const deltas: Record<string, number> = {};
@@ -360,7 +403,7 @@ function resolveBuzzAnswer(
     } else {
       deltas[playerId] = params.baseline;
     }
-    return enterReveal(state, rounds, q.correct, deltas, {
+    return enterReveal(state, rounds, shuffledCorrect(state, q.correct), deltas, {
       buzzedPlayerId: playerId,
       buzzedAnswer: choice,
       buzzedCorrect: true,
@@ -371,7 +414,7 @@ function resolveBuzzAnswer(
   if (isSteal) {
     // Steal wrong: penalize the stealer, no further attempts.
     deltas[playerId] = -params.stealWrongPenalty;
-    return enterReveal(state, rounds, q.correct, deltas, {
+    return enterReveal(state, rounds, shuffledCorrect(state, q.correct), deltas, {
       buzzedPlayerId: playerId,
       buzzedAnswer: choice,
       buzzedCorrect: false,
@@ -379,15 +422,28 @@ function resolveBuzzAnswer(
   }
   // Original buzzer wrong: open steal window for everyone else.
   const wrongAnswers = [...(state.wrongAnswers ?? []), choice];
-  return openSteal({ ...state, wrongAnswers });
+  return openSteal({ ...state, wrongAnswers }, rounds);
 }
 
-function openSteal(state: GameState): EngineResult {
+function openSteal(state: GameState, rounds: RoundQuestions): EngineResult {
   // Lock out the player who just buzzed (or who was holding the lock on timeout).
   const originalId = state.buzzedPlayerId ?? state.lockedOutPlayerIds[0];
   const lockedOut = originalId
     ? Array.from(new Set([...state.lockedOutPlayerIds, originalId]))
     : state.lockedOutPlayerIds;
+
+  // If all players are now locked out, no one can steal — go to reveal.
+  const allLockedOut = state.players.every((p) => lockedOut.includes(p.id));
+  if (allLockedOut) {
+    const deltas: Record<string, number> = {};
+    for (const p of state.players) deltas[p.id] = 0;
+    return enterReveal(state, rounds, shuffledCorrect(state, getCurrentQuestion(state, rounds)?.correct ?? 0), deltas, {
+      buzzedPlayerId: originalId,
+      buzzedAnswer: undefined,
+      buzzedCorrect: false,
+    });
+  }
+
   return {
     state: {
       ...state,
@@ -417,9 +473,9 @@ function resolveSpeedRound(state: GameState, rounds: RoundQuestions): EngineResu
       continue;
     }
     const elapsed = ans.timestamp - startedAt;
-    deltas[p.id] = computeR2Score(ans.choice === q.correct, elapsed);
+    deltas[p.id] = computeR2Score((state.answerMap?.[ans.choice] ?? ans.choice) === q.correct, elapsed);
   }
-  return enterReveal(state, rounds, q.correct, deltas);
+  return enterReveal(state, rounds, shuffledCorrect(state, q.correct), deltas);
 }
 
 function resolveFinalAnswer(state: GameState, rounds: RoundQuestions): EngineResult {
@@ -433,9 +489,9 @@ function resolveFinalAnswer(state: GameState, rounds: RoundQuestions): EngineRes
       deltas[p.id] = -wager; // no answer = treat as wrong
       continue;
     }
-    deltas[p.id] = ans.choice === q.correct ? wager : -wager;
+    deltas[p.id] = (state.answerMap?.[ans.choice] ?? ans.choice) === q.correct ? wager : -wager;
   }
-  return enterReveal(state, rounds, q.correct, deltas);
+  return enterReveal(state, rounds, shuffledCorrect(state, q.correct), deltas);
 }
 
 function enterReveal(
@@ -447,7 +503,7 @@ function enterReveal(
 ): EngineResult {
   const safeDeltas: Record<string, number> = deltas ?? {};
   // Always resolve the correct answer so the reveal screen can highlight it.
-  const resolvedCorrect = correctIndex ?? getCurrentQuestion(state, rounds)?.correct ?? -1;
+  const resolvedCorrect = correctIndex ?? shuffledCorrect(state, getCurrentQuestion(state, rounds)?.correct ?? -1);
   // Apply deltas to player scores. Final round clamps at 0 (no negative scores).
   const isFinal = state.currentRound === 4;
   const players: Player[] = state.players.map((p) => {
@@ -504,13 +560,20 @@ export function enterFinalWager(
   if (!q) {
     return { state: { ...state, phase: "WINNER" }, clear: ALL_TIMERS };
   }
+  // Grant 50 bonus points to players below 100 so everyone has something to wager.
+  const players = state.players.map((p) =>
+    p.score < 100 ? { ...p, score: p.score + 50 } : p,
+  );
+  const { pub: finalPub, answerMap: finalAnswerMap } = toPublic(q);
   return {
     state: {
       ...state,
+      players,
       phase: "FINAL_WAGER",
       currentRound: 4,
       questionIndex: index,
-      currentQuestion: toPublic(q),
+      currentQuestion: finalPub,
+      answerMap: finalAnswerMap,
       wagers: {},
       speedRoundAnswers: {},
       lockedOutPlayerIds: [],
@@ -530,7 +593,7 @@ export function enterFinalWager(
 function autoCompleteFinalWagers(state: GameState): EngineResult {
   const wagers = { ...(state.wagers ?? {}) };
   for (const p of state.players) {
-    if (wagers[p.id] == null) wagers[p.id] = 0;
+    if (wagers[p.id] == null) wagers[p.id] = Math.floor(p.score * 0.2);
   }
   return enterFinalQuestion({ ...state, wagers });
 }

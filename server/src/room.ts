@@ -33,6 +33,7 @@ export class Room {
   private sockets = new Map<string, ServerWebSocket<SocketData>>();
   private disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly timers = new TimerManager();
+  private pausedGameTimer: { event: TimerEvent; remainingMs: number } | null = null;
 
   constructor(roomCode: string, hostId: string) {
     this.state = initialState(roomCode, hostId);
@@ -95,39 +96,76 @@ export class Room {
     this.broadcast();
   }
 
-  // Host action: TOGGLE_PAUSE. Pauses or resumes auto-advance timers.
+  // Host action: TOGGLE_PAUSE. Pauses or resumes all active timers.
   handleTogglePause(playerId: string): void {
     if (playerId !== this.state.hostId) return;
     if (this.state.paused) {
-      // Resume: re-schedule auto-advance if in a phase that auto-advances.
+      // Resume: restore game timer if one was paused.
+      if (this.pausedGameTimer && this.roundQuestions) {
+        const { event, remainingMs } = this.pausedGameTimer;
+        this.pausedGameTimer = null;
+        this.timers.schedule(event, remainingMs, () => this.fireTimer(event));
+        this.state = { ...this.state, paused: false, buzzWindowEndsAt: Date.now() + remainingMs };
+      } else {
+        this.state = { ...this.state, paused: false };
+      }
+      // Re-schedule auto-advance if applicable.
       let delayMs = 0;
       const phase = this.state.phase;
       if (phase === "ROUND_INTRO") delayMs = ROUND_INTRO_AUTO_ADVANCE_MS;
       else if (phase === "REVEAL") delayMs = REVEAL_AUTO_ADVANCE_MS;
       else if (phase === "SCOREBOARD") delayMs = SCOREBOARD_AUTO_ADVANCE_MS;
-
       if (delayMs && this.roundQuestions) {
         this.timers.schedule("AUTO_ADVANCE", delayMs, () => this.fireTimer("AUTO_ADVANCE"));
-        this.state = { ...this.state, paused: false, autoAdvanceAt: Date.now() + delayMs };
-      } else {
-        this.state = { ...this.state, paused: false, autoAdvanceAt: undefined };
+        this.state = { ...this.state, autoAdvanceAt: Date.now() + delayMs };
       }
     } else {
-      // Pause: clear auto-advance timer.
-      this.state = { ...this.state, paused: true, autoAdvanceAt: undefined };
+      // Pause: save remaining game timer time, clear all timers.
+      const remaining = this.state.buzzWindowEndsAt
+        ? Math.max(0, this.state.buzzWindowEndsAt - Date.now())
+        : 0;
+      const activeEvent = this.activeGameTimerEvent();
+      if (activeEvent && remaining > 0) {
+        this.pausedGameTimer = { event: activeEvent, remainingMs: remaining };
+        this.timers.clear(activeEvent);
+      }
       this.timers.clear("AUTO_ADVANCE");
+      this.state = { ...this.state, paused: true, autoAdvanceAt: undefined };
     }
     this.broadcast();
+  }
+
+  private activeGameTimerEvent(): TimerEvent | null {
+    const { phase, currentRound } = this.state;
+    if (phase === "BUZZ_OPEN" && (currentRound === 1 || currentRound === 3)) return "BUZZ_OPEN_IDLE";
+    if (phase === "BUZZ_OPEN" && currentRound === 2) return "R2_WINDOW";
+    if (phase === "ANSWER_LOCK" && (currentRound === 1 || currentRound === 3)) {
+      return this.state.lockedOutPlayerIds.length > 0 ? "STEAL_ANSWER_WINDOW" : "BUZZ_ANSWER_WINDOW";
+    }
+    if (phase === "ANSWER_LOCK" && currentRound === 4) return "FINAL_ANSWER_WINDOW";
+    if (phase === "FINAL_WAGER") return "FINAL_WAGER_WINDOW";
+    return null;
   }
 
   // Host action: NEXT_QUESTION (advances ROUND_INTRO/QUESTION_REVEAL/REVEAL/SCOREBOARD/BUZZ_OPEN).
   // Also auto-promotes round 3 → round 4 (final) when SCOREBOARD advances.
   handleNextQuestion(playerId: string): void {
-    if (playerId !== this.state.hostId) return;
-    if (!this.roundQuestions) return;
-    // Special case: SCOREBOARD after round 3 → enter FINAL_WAGER directly.
+    if (playerId !== this.state.hostId) {
+      console.log(`[room] handleNextQuestion rejected: playerId=${playerId} !== hostId=${this.state.hostId}`);
+      return;
+    }
+    if (!this.roundQuestions) {
+      console.log("[room] handleNextQuestion rejected: no roundQuestions");
+      return;
+    }
+    // Special case: SCOREBOARD after round 3 → enter FINAL_WAGER directly (if final has questions).
     if (this.state.phase === "SCOREBOARD" && this.state.currentRound === 3) {
-      this.applyEngine(enterFinalWager(this.state, this.roundQuestions));
+      if (this.roundQuestions.final.length > 0) {
+        this.applyEngine(enterFinalWager(this.state, this.roundQuestions));
+        return;
+      }
+      // No final questions — go to WINNER.
+      this.applyEngine({ state: { ...this.state, phase: "WINNER" }, clear: ["AUTO_ADVANCE"] });
       return;
     }
     this.applyEngine(advanceFromIntroOrReveal(this.state, this.roundQuestions));
@@ -247,8 +285,10 @@ export class Room {
     }
     if (result.schedule) {
       const { name, delayMs, event } = result.schedule;
-      // Don't schedule auto-advance while paused.
-      if (!(name === "AUTO_ADVANCE" && this.state.paused)) {
+      if (this.state.paused && name !== "AUTO_ADVANCE") {
+        // Game is paused — store the timer instead of scheduling it.
+        this.pausedGameTimer = { event, remainingMs: delayMs };
+      } else if (!(name === "AUTO_ADVANCE" && this.state.paused)) {
         this.timers.schedule(name, delayMs, () => this.fireTimer(event));
         if (name === "AUTO_ADVANCE") {
           result.state = { ...result.state, autoAdvanceAt: Date.now() + delayMs };

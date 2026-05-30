@@ -105,7 +105,7 @@ export function AnswerLockScreen({ state }: Props) {
       </motion.p>
       {state.buzzWindowEndsAt && (
         <div className="mt-8 w-96">
-          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={totalMs} />
+          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={totalMs} paused={state.paused} />
         </div>
       )}
     </div>
@@ -192,7 +192,7 @@ function FinalAnswerLock({ state }: { state: GameState }) {
 
       {state.buzzWindowEndsAt && (
         <div className="mt-3 px-12">
-          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={FINAL_ANSWER_WINDOW_MS} />
+          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={FINAL_ANSWER_WINDOW_MS} paused={state.paused} />
         </div>
       )}
     </div>

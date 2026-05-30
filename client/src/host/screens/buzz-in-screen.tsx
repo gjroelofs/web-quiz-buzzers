@@ -19,6 +19,8 @@ const ACCENT_RING = [
   "shadow-[0_0_30px_rgba(250,204,21,0.6)]",
 ];
 
+const SPLIT_TEXT_FROM = { y: 26, opacity: 0, rotate: -3 };
+
 interface Props {
   state: GameState;
 }
@@ -55,7 +57,7 @@ export function BuzzInScreen({ state }: Props) {
       </div>
 
       {/* Question + media: centered vertical block. */}
-      <div className="flex-1 flex flex-col items-center justify-center text-center min-h-0 py-6">
+      <div className="flex-1 flex flex-col items-center text-center min-h-0 pt-6">
         <motion.h1
           initial={{ y: 24, opacity: 0, scale: 0.94 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -69,7 +71,7 @@ export function BuzzInScreen({ state }: Props) {
             duration={0.55}
             ease="back.out(1.6)"
             animKey={animKey}
-            from={{ y: 26, opacity: 0, rotate: -3 }}
+            from={SPLIT_TEXT_FROM}
           />
         </motion.h1>
         {q.media && (
@@ -77,7 +79,7 @@ export function BuzzInScreen({ state }: Props) {
             initial={{ scale: 0.85, opacity: 0, rotate: -2 }}
             animate={{ scale: 1, opacity: 1, rotate: 0 }}
             transition={{ duration: 0.55, delay: 0.25, ease: "backOut" }}
-            className="mt-6 flex justify-center"
+            className="flex-1 flex items-center justify-center"
           >
             <MediaPlayer media={q.media} packId={state.packId} />
           </motion.div>
@@ -125,7 +127,7 @@ export function BuzzInScreen({ state }: Props) {
 
       {state.buzzWindowEndsAt && (
         <div className="mt-4 px-12">
-          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={totalMs} />
+          <CountdownBar endsAt={state.buzzWindowEndsAt} totalMs={totalMs} paused={state.paused} />
         </div>
       )}
     </div>

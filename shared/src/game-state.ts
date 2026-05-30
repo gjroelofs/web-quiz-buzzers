@@ -39,7 +39,7 @@ export interface Player {
 // to prevent clients from snooping the answer in devtools.
 export interface QuestionPublic {
   text: string;
-  answers: [string, string, string, string];
+  answers: string[];
   category?: string;
   media?: { type: "image" | "audio"; src: string } | null;
 }
@@ -73,6 +73,7 @@ export interface GameState {
   wagers?: Record<string, number>;
   lastReveal?: RevealResult;
   wrongAnswers?: number[];
+  answerMap?: number[]; // shuffled index → original index; server-only, stripped before broadcast
   paused?: boolean;
   autoAdvanceAt?: number;
   startedAt?: number;
